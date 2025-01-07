@@ -1,8 +1,8 @@
 //
 //  SceneDelegate.swift
-//  Image_Feed
+//  ImageFeed
 //
-//  Created by Yura on 07.01.25.
+//  Created by Yura on 23.12.24.
 //
 
 import UIKit
