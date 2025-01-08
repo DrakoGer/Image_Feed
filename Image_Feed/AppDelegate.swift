@@ -1,10 +1,3 @@
-//
-//  AppDelegate.swift
-//  Image_Feed
-//
-//  Created by Yura on 07.01.25.
-//
-
 import UIKit
 
 @main
