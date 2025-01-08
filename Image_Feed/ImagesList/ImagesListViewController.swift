@@ -10,7 +10,7 @@ import UIKit
 final class ImagesListViewController: UIViewController {
     
     // MARK: - Outlets
-    @IBOutlet weak var tableView: UITableView!
+    @IBOutlet private weak var tableView: UITableView!
     
     // MARK: - Properties
     private let photosName: [String] = Array(0..<20).map{ "\($0)" }
@@ -35,7 +35,7 @@ final class ImagesListViewController: UIViewController {
 // MARK: - UITableViewDataSource
 extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return photosName.count
+        photosName.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
@@ -82,7 +82,7 @@ extension ImagesListViewController {
         cell.dateLabel.text = dateFormatter.string(from: Date())
 
         let isLiked = indexPath.row % 2 == 0
-        let likeImage = isLiked ? UIImage(named: "like_active") : UIImage(named: "like_notActive")
+        let likeImage = isLiked ? UIImage(named: "likeActive") : UIImage(named: "likeNotActive")
         cell.likeButton.setImage(likeImage, for: .normal)
     }
 }
