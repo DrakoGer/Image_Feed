@@ -59,6 +59,7 @@ extension ImagesListViewController: UITableViewDataSource {
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: ImagesListCell.reuseIdentifier, for: indexPath)
+        cell.selectionStyle = .none
 
         guard let imageListCell = cell as? ImagesListCell else {
             return UITableViewCell()
@@ -75,6 +76,7 @@ extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
         performSegue(withIdentifier: showSingleImageSegueIdentifier, sender: indexPath)
+        
     }
 
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
