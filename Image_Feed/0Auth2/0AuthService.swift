@@ -7,8 +7,6 @@
 
 import Foundation
 
-import Foundation
-
 final class OAuth2Service {
     
     // MARK: - Синглтон

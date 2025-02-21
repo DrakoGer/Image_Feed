@@ -21,12 +21,6 @@ final class AuthViewController: UIViewController {
         super.viewDidLoad()
         entryButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         
-        print("Создан экземпляр AuthViewController: \(self)")
-        if delegate == nil {
-            print("После возврата из WebView, delegate в AuthViewController равен nil")
-        } else {
-            print("Delegate в AuthViewController не потерялся после WebView!")
-        }
     }
     
     override func viewDidAppear(_ animated: Bool) {
