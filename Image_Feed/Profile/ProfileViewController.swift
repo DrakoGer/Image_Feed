@@ -5,6 +5,8 @@ final class ProfileViewController: UIViewController {
     private let avatarImage: UIImageView = {
         let imageView = UIImageView()
         imageView.image = UIImage(named: "UserAvatar")
+        imageView.layer.cornerRadius = 35
+        imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
         return imageView
     }()
@@ -44,8 +46,18 @@ final class ProfileViewController: UIViewController {
         return button
     }()
     
+    // MARK: - Подписка на изменения аватарки
+    private var profileImageObserver: NSObjectProtocol?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
+        
+        setupUI()
+        updateProfileInfo()
+        setupObservers()
+    }
+    
+    private func setupUI() {
         
         [avatarImage, nameLabel, emailLabel, descriptionLabel, logoutButton].forEach { view.addSubview($0) }
         
@@ -70,6 +82,38 @@ final class ProfileViewController: UIViewController {
             logoutButton.trailingAnchor.constraint(equalTo: view.safeAreaLayoutGuide.trailingAnchor, constant: -16)
         ])
     }
+    
+    // MARK: - Подписка на обновление аватарки
+       private func setupObservers() {
+           profileImageObserver = NotificationCenter.default.addObserver(
+               forName: ProfileImageService.didChangeNotification,
+               object: nil,
+               queue: .main
+           ) { [weak self] _ in
+               self?.updateAvatar()
+           }
+           
+           // Если аватарка уже загружена — обновим сразу
+           updateAvatar()
+       }
+       
+       // MARK: - Обновление аватарки
+       private func updateAvatar() {
+           guard let avatarURL = ProfileImageService.shared.avatarURL,
+                 let url = URL(string: avatarURL) else { return }
+           
+           // TODO: В следующем уроке подключим Kingfisher для загрузки изображения
+           print("🔄 Загружаем аватарку: \(url)")
+       }
+       
+       // MARK: - Обновление данных профиля
+       private func updateProfileInfo() {
+           guard let profile = ProfileService.shared.profile else { return }
+           
+           nameLabel.text = profile.name
+           emailLabel.text = profile.loginName
+           descriptionLabel.text = profile.bio
+       }
     
     @objc private func logoutButtonTapped() {
         // TODO: - Добавить логику при нажатии на кнопку

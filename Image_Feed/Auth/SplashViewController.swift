@@ -9,6 +9,7 @@ import UIKit
 
 final class SplashViewController: UIViewController {
     
+    private let profileService = ProfileService.shared
     private let storage = OAuth2TokenStorage()
     private let showAuthenticationScreenSegueIdentifier = "showAuthenticationScreen"
     
@@ -19,11 +20,11 @@ final class SplashViewController: UIViewController {
     }
     // MARK: - Проверка Аутентификации
     private func checkAuth() {
-        if storage.token != nil {
-            switchTabBarController()
-        } else {
+        guard let token = storage.token else {  // ✅ Теперь используем сохранённый токен
             performSegue(withIdentifier: showAuthenticationScreenSegueIdentifier, sender: nil)
+            return
         }
+        fetchProfile(token) // ✅ Передаём токен в метод
     }
     // MARK: - Навигация
     private func switchTabBarController() {
@@ -36,6 +37,29 @@ final class SplashViewController: UIViewController {
             .instantiateViewController(withIdentifier: "TabBarViewController")
         
         window.rootViewController = tabBarController
+    }
+}
+
+// MARK: - Загрузка профиля
+// MARK: - Загрузка профиля
+private extension SplashViewController {
+    func fetchProfile(_ token: String) {
+        UIBlockingProgressHUD.show()  // ✅ Блокируем UI, пока загружается профиль
+        
+        profileService.fetchProfile() { [weak self] result in
+            UIBlockingProgressHUD.dismiss()  // ✅ Разблокируем UI после завершения запроса
+            
+            guard let self = self else { return }
+            
+            switch result {
+            case .success:
+                print("✅ Профиль загружен успешно")
+                self.switchTabBarController()  // ✅ После загрузки профиля переходим к TabBarController
+            case .failure(let error):
+                print("❌ Ошибка загрузки профиля: \(error)")
+                // TODO: Добавить показ ошибки пользователю
+            }
+        }
     }
 }
 
@@ -62,7 +86,13 @@ extension SplashViewController {
 extension SplashViewController: AuthViewControllerDelegate {
     func didAuthenticate(_ vc: AuthViewController) {
         vc.dismiss(animated: true) { [weak self] in
-            self?.switchTabBarController()
+            guard let self = self, let token = self.storage.token else { return }
+            self.fetchProfile(token)  // ✅ После авторизации загружаем профиль, затем переходим к TabBar
+            
+            // Теперь загружаем аватарку
+            if let username = self.profileService.profile?.username {
+                ProfileImageService.shared.fetchProfileImageURL(username: username) { _ in }
+            }
         }
     }
 }
