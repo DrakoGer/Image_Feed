@@ -55,6 +55,8 @@ final class OAuth2Service {
         
     }
     
+    
+    
     // MARK: - Извлечение токена
     func fetchAuthToken(code: String, completion: @escaping (Result<String, OAuthError>) -> Void) {
         assert(Thread.isMainThread) // Убеждаемся, что вызываем из главного потока

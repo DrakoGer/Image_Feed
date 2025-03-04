@@ -41,10 +41,19 @@ final class SplashViewController: UIViewController {
 }
 
 // MARK: - Загрузка профиля
-// MARK: - Загрузка профиля
 private extension SplashViewController {
     func fetchProfile(_ token: String) {
+        print("🟢 [SplashViewController] fetchProfile() вызван с токеном: \(token)")
         UIBlockingProgressHUD.show()  // ✅ Блокируем UI, пока загружается профиль
+        
+        
+        // Добавляем отладочный лог для сравнения токенов
+        if let storedToken = profileService.storage.token {
+            print("🔍 [SplashViewController] Токен из storage: \(storedToken)")
+            print("🔍 [SplashViewController] Совпадают ли токены: \(token == storedToken)")
+        } else {
+            print("⚠️ [SplashViewController] Токен в storage отсутствует!")
+        }
         
         profileService.fetchProfile() { [weak self] result in
             UIBlockingProgressHUD.dismiss()  // ✅ Разблокируем UI после завершения запроса

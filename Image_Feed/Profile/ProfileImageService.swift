@@ -10,9 +10,7 @@ import Foundation
 final class ProfileImageService {
     
     static let shared = ProfileImageService() // Синглтон
-    
-    private let urlSession = URLSession.shared
-    private var task: URLSessionTask?
+    private let networkClient = NetworkClient()
     private let storage = OAuth2TokenStorage()
     
     private(set) var avatarURL: String?
@@ -20,60 +18,58 @@ final class ProfileImageService {
     // Уведомление о смене аватарки
     static let didChangeNotification = Notification.Name("ProfileImageProviderDidChange")
     
-    private init() {}
-
-    /// Запрос URL аватарки по username
-    func fetchProfileImageURL(username: String, _ completion: @escaping (Result<String, Error>) -> Void) {
+    func fetchProfileImageURL(username: String, completion: @escaping (Result<String, Error>) -> Void) {
         assert(Thread.isMainThread)
-        
-        task?.cancel() // Отменяем предыдущий запрос, если был
-        
+        print("🟢 [ProfileImageService] fetchProfileImageURL() вызван")
+
         guard let token = storage.token else {
             completion(.failure(NSError(domain: "AuthError", code: 401, userInfo: nil)))
             return
         }
-        
-        let urlString = "https://api.unsplash.com/users/\(username)"
-        guard let url = URL(string: urlString) else {
+        print("✅ [ProfileImageService] Токен найден: \(token)")
+
+        guard let url = URL(string: "https://api.unsplash.com/users/\(username)") else {
+            print("❌ [ProfileImageService] Ошибка: Неверный URL")
             completion(.failure(NSError(domain: "URLError", code: 400, userInfo: nil)))
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
+
+        let task = networkClient.objectTask(for: request) { (result: Result<UserResult, Error>) in
             DispatchQueue.main.async {
-                guard let self = self else { return }
-                self.task = nil
-                
-                if let error = error {
+                switch result {
+                case .success(let userResult):
+                    let profileImageURL = userResult.profileImage.small
+                    self.avatarURL = profileImageURL
+                    print("🔍 [ProfileImageService] Ответ сервера: Успешно, URL аватарки: \(profileImageURL)")
+                    print("✅ [ProfileImageService] Аватарка загружена: \(profileImageURL)")
+
+                    NotificationCenter.default.post(
+                        name: ProfileImageService.didChangeNotification,
+                        object: self,
+                        userInfo: ["URL": profileImageURL]
+                    )
+
+                    completion(.success(profileImageURL))
+
+                case .failure(let error):
+                    print("❌ [ProfileImageService] Ошибка загрузки аватарки: \(error.localizedDescription)")
                     completion(.failure(error))
-                    return
                 }
-                
-                guard let data = data,
-                      let userResult = try? JSONDecoder().decode(UserResult.self, from: data) else {
-                    completion(.failure(NSError(domain: "DecodeError", code: 500, userInfo: nil)))
-                    return
-                }
-                
-                let profileImageURL = userResult.profileImage.small
-                self.avatarURL = profileImageURL
-                
-                // Отправляем нотификацию
-                NotificationCenter.default.post(
-                    name: ProfileImageService.didChangeNotification,
-                    object: self,
-                    userInfo: ["URL": profileImageURL]
-                )
-                
-                completion(.success(profileImageURL))
+            }
+
+            // Логируем детали запроса до отправки
+            print("🔍 [ProfileImageService] Отправлен запрос: URL=\(url.absoluteString), HTTPMethod=\(request.httpMethod ?? "GET")")
+            if let authorization = request.value(forHTTPHeaderField: "Authorization") {
+                print("🔍 [ProfileImageService] Заголовок Authorization: \(authorization)")
+            } else {
+                print("⚠️ [ProfileImageService] Заголовок Authorization отсутствует!")
             }
         }
-        self.task = task
-        task.resume()
+        task.resume() // 👈 БЕЗ ЭТОГО ЗАПРОС НЕ ВЫПОЛНЯЕТСЯ!
     }
 }
 
@@ -89,3 +85,4 @@ struct UserResult: Codable {
 struct ProfileImage: Codable {
     let small: String
 }
+

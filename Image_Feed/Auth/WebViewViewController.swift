@@ -21,20 +21,40 @@ final class WebViewViewController: UIViewController {
     
     weak var delegate: WebViewViewControllerDelegate?
     
+    private var progressObservation: NSKeyValueObservation? // 🔥 Переменная для наблюдателя
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
         
         webView.navigationDelegate = self
         loadAuthView()
+        
+        // 📌 Используем новое API для KVO
+        progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] _, _ in
+            self?.updateProgress()
+        }
+    }
+    
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        updateProgress()
+        // Убрано addObserver, так как используем observe
+    }
+    
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        // Очистка наблюдателя при исчезновении
+        progressObservation?.invalidate()
     }
     
     // MARK: - Actions
     @IBAction func backButtonTapped(_ sender: Any) {
+        delegate?.webViewViewControllerDidCancel(self)
         dismiss(animated: true, completion: nil)
     }
     
-    // MAR: - Private Methods
+    // MARK: - Private Methods
     private func loadAuthView() {
         guard var urlComponents = URLComponents(string: WebViewConstants.unsplashAuthorizedURLString) else {
             return
@@ -56,83 +76,55 @@ final class WebViewViewController: UIViewController {
         webView.load(request)
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil)
-        updateProgress()
-    }
-    
-    override func viewWillDisappear(_ animated: Bool) {
-        super.viewWillDisappear(animated)
-        webView.removeObserver(self, forKeyPath: #keyPath(WKWebView.estimatedProgress), context: nil)
-    }
-    
-    override func observeValue(forKeyPath keyPath: String?,
-                               of object: Any?,
-                               change: [NSKeyValueChangeKey : Any]?,
-                               context: UnsafeMutableRawPointer?) {
-        if keyPath == #keyPath(WKWebView.estimatedProgress) {
-            updateProgress()
-        } else {
-            super.observeValue(forKeyPath: keyPath,
-                               of: object,
-                               change: change,
-                               context: context)
-        }
-    }
-    
     private func updateProgress() {
         progressView.setProgress(Float(webView.estimatedProgress), animated: true)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
+    }
+    
+    // Обработка KVO (для совместимости со старым стилем)
+    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+        if keyPath == #keyPath(WKWebView.estimatedProgress), object as? WKWebView == webView {
+            updateProgress()
+        } else {
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+        }
     }
 }
 
 // MARK: - WKNavigationDelegate
 extension WebViewViewController: WKNavigationDelegate {
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
-        if let code = code(from: navigationAction) {
-            print("Получен код авторизации: \(code)")
-            
-            if delegate == nil {
-                print("Delegate равен nil!")
-            } else {
-                print("Delegate установлен")
-            }
-            
-            delegate?.webViewViewController(self, didAuthenticateWithCode: code)
-            
-            decisionHandler(.cancel)
-        } else {
-            decisionHandler(.allow)
-        }
-    }
-    // MARK: - Извлечение кода авторищации из URL-адреса перенаправления
-    private func code(from navigationAction: WKNavigationAction) -> String? {
+    func webView(_ webView: WKWebView, decidePolicyFor navigationAction: WKNavigationAction, decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
         if let url = navigationAction.request.url {
             print("Перенаправление на URL: \(url.absoluteString)")
+            if let code = code(from: url) {
+                print("Получен код авторизации: \(code)")
+                
+                if delegate == nil {
+                    print("Delegate равен nil!")
+                } else {
+                    print("Delegate установлен")
+                }
+                
+                delegate?.webViewViewController(self, didAuthenticateWithCode: code)
+                decisionHandler(.cancel)
+                return
+            }
         }
-        
-        if
-            let url = navigationAction.request.url,
-            let urlComponents = URLComponents(string: url.absoluteString),
-            urlComponents.path == "/oauth/authorize/native",
-            let items = urlComponents.queryItems,
-            let codeItem = items.first(where: { $0.name == "code" })
-        {
-            print("Найден код авторизации: \(codeItem.value ?? "nil")")
-            return codeItem.value
-        } else {
-            print("Не найден код авторизации")
-            return nil
+        decisionHandler(.allow)
+    }
+    
+    // MARK: - Извлечение кода авторизации из URL-адреса перенаправления
+    private func code(from url: URL) -> String? {
+        print("🔍 [WebViewViewController] Проверяем URL: \(url.absoluteString)")
+        if let urlComponents = URLComponents(string: url.absoluteString),
+           let queryItems = urlComponents.queryItems {
+            for item in queryItems {
+                print("🔍 [WebViewViewController] Query item: \(item.name)=\(item.value ?? "nil")")
+            }
+            return queryItems.first(where: { $0.name == "code" })?.value
         }
+        print("Не найден код авторизации")
+        return nil
     }
 }
+
