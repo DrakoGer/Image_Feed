@@ -72,27 +72,27 @@ final class ProfileService {
     
     // MARK: - Получение профиля
     func fetchProfile(completion: @escaping (Result<Profile, Error>) -> Void) {
-        print("🟢 [ProfileService] fetchProfile() вызван")
+        print("🟢 [ProfileService.fetchProfile] вызван")
         guard let token = storage.token else {
-            print("❌ Ошибка: Токен отсутствует в хранилище!")
+            print("❌ [ProfileService.fetchProfile] Ошибка: Токен отсутствует в хранилище!")
             completion(.failure(NSError(domain: "ProfileService", code: 401, userInfo: nil)))
             return
         }
-        print("✅ Найден токен: \(token)")
-        
+        print("✅ [ProfileService.fetchProfile] Найден токен: \(token)")
+
         assert(Thread.isMainThread)
-        
+
         guard let url = URL(string: "https://api.unsplash.com/me") else {
             completion(.failure(NSError(domain: "ProfileService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Неверный URL"])))
             return
         }
-        
+
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        print("🔍 [ProfileService] Формируем запрос: URL=\(url.absoluteString), Authorization=\(request.value(forHTTPHeaderField: "Authorization") ?? "не задано")")
-        
+        print("🔍 [ProfileService.fetchProfile] Формируем запрос: URL=\(url.absoluteString), Authorization=\(request.value(forHTTPHeaderField: "Authorization") ?? "не задано")")
+
         networkClient.objectTask(for: request) { (result: Result<ProfileResult, Error>) in
             DispatchQueue.main.async {
                 switch result {
@@ -101,10 +101,10 @@ final class ProfileService {
                     self.profile = profile
                     completion(.success(profile))
                 case .failure(let error):
-                    print("❌ [ProfileService] Ошибка получения профиля: \(error.localizedDescription) (код: \(error._code))")
+                    print("❌ [ProfileService.fetchProfile] Ошибка получения профиля: \(error.localizedDescription) (код: \(error._code))")
                     if let nsError = error as NSError?, let data = nsError.userInfo["data"] as? Data,
                        let responseString = String(data: data, encoding: .utf8) {
-                        print("🔍 [ProfileService] Тело ответа: \(responseString)")
+                        print("🔍 [ProfileService.fetchProfile] Тело ответа: \(responseString)")
                     }
                     completion(.failure(error))
                 }
@@ -112,50 +112,3 @@ final class ProfileService {
         }
     }
 }
-    
-    // MARK: - Получение профиля
-//    func fetchProfile(completion: @escaping (Result<Profile, Error>) -> Void) {
-//        print("🟢 [ProfileService] fetchProfile() вызван") // ✅ Добавили лог
-//        guard let token = storage.token else {
-//            print("❌ Ошибка: Токен отсутствует в хранилище!")
-//            completion(.failure(NSError(domain: "ProfileService", code: 401, userInfo: nil)))
-//            return
-//        }
-//        print("✅ Найден токен: \(token)")
-//        
-//        assert(Thread.isMainThread)
-//        
-//        guard let token = storage.token else {
-//            completion(.failure(NSError(domain: "ProfileService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Токен отсутствует"])))
-//            return
-//        }
-//        
-//        guard let url = URL(string: "https://api.unsplash.com/me") else {
-//            completion(.failure(NSError(domain: "ProfileService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Неверный URL"])))
-//            return
-//        }
-//        
-//        var request = URLRequest(url: url)
-//        request.httpMethod = "GET"
-//        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-//        
-//        
-//        request.setValue("application/json", forHTTPHeaderField: "Accept") // Добавляем для совместимости с API
-//        print("🔍 [ProfileService] Формируем запрос: URL=\(url.absoluteString), Authorization=\(request.value(forHTTPHeaderField: "Authorization") ?? "не задано")")
-//        
-//        networkClient.objectTask(for: url) { (result: Result<ProfileResult, Error>) in
-//            DispatchQueue.main.async {
-//                switch result {
-//                case .success(let profileResult):
-//                    let profile = Profile(result: profileResult)
-//                    self.profile = profile // ✅ Сохраняем профиль
-//                    completion(.success(profile))
-//                    
-//                case .failure(let error):
-//                    print("❌ [ProfileService] Ошибка получения профиля: \(error.localizedDescription)")
-//                    completion(.failure(error))
-//                }
-//            }
-//        }
-//    }
-//}

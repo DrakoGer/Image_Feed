@@ -10,7 +10,7 @@ import ProgressHUD
 
 final class AuthViewController: UIViewController {
     
- 
+    
     weak var delegate: AuthViewControllerDelegate?
     private let showWebViewSegueIdentifier = "showWebView"
     private let oauth2Service = OAuth2Service.shared
@@ -77,22 +77,10 @@ extension AuthViewController: WebViewViewControllerDelegate {
                         vc.dismiss(animated: true)
                     }
                     
-                    if self.delegate == nil {
-                        print("Delegate в AuthViewController равен nil перед вызовом didAuthenticate!")
-                    } else {
-                        print("Delegate вызван, переходим дальше")
-                        self.delegate?.didAuthenticate(self)
-                    }
-                    
-                    if self.delegate == nil {
-                        print("Delegate в AuthViewController равен nil!")
-                    } else {
-                        print("Delegate вызван, переходим дальше")
-                        self.delegate?.didAuthenticate(self)
-                    }
+                    self.delegate?.didAuthenticate(self)
                     
                 case .failure(let error):
-                    print("Ошибка авторизации: \(error.localizedDescription)")
+                    print("❌ [AuthViewController] Ошибка авторизации: \(error.localizedDescription)")
                     self.showAuthErrorAlert()
                 }
             }
@@ -101,7 +89,6 @@ extension AuthViewController: WebViewViewControllerDelegate {
     
     func webViewViewControllerDidCancel(_ vc: WebViewViewController) {
         print("Отмена аутентификации пользователем")
-        print("Закрываем WebView и передаём управление")
         vc.dismiss(animated: true)
         self.delegate?.didAuthenticate(self)
     }
@@ -109,11 +96,12 @@ extension AuthViewController: WebViewViewControllerDelegate {
     // MARK: - Метод показа ошибки при авторизации
     private func showAuthErrorAlert() {
         let alert = UIAlertController(
-            title: "Ошибка авторизации",
-            message: "Не удалось выполнить вход. Попробуйте ещё раз.",
+            title: "Что-то пошло не так",
+            message: "Не удалось войти в систему",
             preferredStyle: .alert
         )
         alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
         present(alert, animated: true, completion: nil)
     }
 }
+

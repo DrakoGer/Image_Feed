@@ -7,16 +7,33 @@
 
 import UIKit
 import Foundation
+import SwiftKeychainWrapper
 
-// MARK: - Сохранение токена (Bearer Token) в User Defaults
+// MARK: - Сохранение токена (Bearer Token) в Keychain
 final class OAuth2TokenStorage {
-    
+    private let tokenKey = "AuthToken"
+
     var token: String? {
         get {
-            return UserDefaults.standard.string(forKey: "AuthToken")
+            print("🔍 [OAuth2TokenStorage] Получение токена из Keychain")
+            let token = KeychainWrapper.standard.string(forKey: tokenKey)
+            print("🔍 [OAuth2TokenStorage] Токен: \(token ?? "nil")")
+            return token
         }
         set {
-            UserDefaults.standard.setValue(newValue, forKey: "AuthToken")
+            if let newValue = newValue {
+                print("🔄 [OAuth2TokenStorage] Сохранение токена в Keychain: \(newValue)")
+                let success = KeychainWrapper.standard.set(newValue, forKey: tokenKey)
+                if !success {
+                    print("❌ [OAuth2TokenStorage] Ошибка сохранения токена в Keychain")
+                }
+            } else {
+                print("🗑️ [OAuth2TokenStorage] Удаление токена из Keychain")
+                let success = KeychainWrapper.standard.removeObject(forKey: tokenKey)
+                if !success {
+                    print("❌ [OAuth2TokenStorage] Ошибка удаления токена из Keychain")
+                }
+            }
         }
     }
 }

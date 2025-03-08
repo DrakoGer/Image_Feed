@@ -31,16 +31,21 @@ final class WebViewViewController: UIViewController {
         loadAuthView()
         
         // 📌 Используем новое API для KVO
-        progressObservation = webView.observe(\.estimatedProgress, options: [.new]) { [weak self] _, _ in
-            self?.updateProgress()
-        }
+        progressObservation = webView.observe(
+            \.estimatedProgress,
+             options: [.new],
+             changeHandler: { [weak self] _, _ in
+                 guard let self = self else { return }
+                 self.updateProgress()
+             }
+        )
     }
     
-    override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        updateProgress()
-        // Убрано addObserver, так как используем observe
-    }
+//    override func viewDidAppear(_ animated: Bool) {
+//        super.viewDidAppear(animated)
+//        updateProgress()
+//        // Убрано addObserver, так как используем observe
+//    }
     
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
@@ -82,13 +87,13 @@ final class WebViewViewController: UIViewController {
     }
     
     // Обработка KVO (для совместимости со старым стилем)
-    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-        if keyPath == #keyPath(WKWebView.estimatedProgress), object as? WKWebView == webView {
-            updateProgress()
-        } else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-        }
-    }
+//    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
+//        if keyPath == #keyPath(WKWebView.estimatedProgress), object as? WKWebView == webView {
+//            updateProgress()
+//        } else {
+//            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
+//        }
+//    }
 }
 
 // MARK: - WKNavigationDelegate
