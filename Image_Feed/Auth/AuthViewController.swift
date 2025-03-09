@@ -10,7 +10,6 @@ import ProgressHUD
 
 final class AuthViewController: UIViewController {
     
-    
     weak var delegate: AuthViewControllerDelegate?
     private let showWebViewSegueIdentifier = "showWebView"
     private let oauth2Service = OAuth2Service.shared
@@ -23,7 +22,6 @@ final class AuthViewController: UIViewController {
         entryButton.titleLabel?.font = UIFont.systemFont(ofSize: 17, weight: .regular)
         
     }
-    
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         print("Появился AuthViewController: \(self), Delegate: \(String(describing: delegate))")

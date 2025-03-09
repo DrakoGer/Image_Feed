@@ -21,7 +21,7 @@ final class WebViewViewController: UIViewController {
     
     weak var delegate: WebViewViewControllerDelegate?
     
-    private var progressObservation: NSKeyValueObservation? // 🔥 Переменная для наблюдателя
+    private var progressObservation: NSKeyValueObservation?
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -30,7 +30,6 @@ final class WebViewViewController: UIViewController {
         webView.navigationDelegate = self
         loadAuthView()
         
-        // 📌 Используем новое API для KVO
         progressObservation = webView.observe(
             \.estimatedProgress,
              options: [.new],
@@ -41,15 +40,8 @@ final class WebViewViewController: UIViewController {
         )
     }
     
-//    override func viewDidAppear(_ animated: Bool) {
-//        super.viewDidAppear(animated)
-//        updateProgress()
-//        // Убрано addObserver, так как используем observe
-//    }
-    
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
-        // Очистка наблюдателя при исчезновении
         progressObservation?.invalidate()
     }
     
@@ -85,15 +77,6 @@ final class WebViewViewController: UIViewController {
         progressView.setProgress(Float(webView.estimatedProgress), animated: true)
         progressView.isHidden = fabs(webView.estimatedProgress - 1.0) <= 0.0001
     }
-    
-    // Обработка KVO (для совместимости со старым стилем)
-//    override func observeValue(forKeyPath keyPath: String?, of object: Any?, change: [NSKeyValueChangeKey : Any]?, context: UnsafeMutableRawPointer?) {
-//        if keyPath == #keyPath(WKWebView.estimatedProgress), object as? WKWebView == webView {
-//            updateProgress()
-//        } else {
-//            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
-//        }
-//    }
 }
 
 // MARK: - WKNavigationDelegate

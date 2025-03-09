@@ -10,7 +10,7 @@ import Kingfisher
 
 final class ProfileImageService {
     
-    static let shared = ProfileImageService() // Синглтон
+    static let shared = ProfileImageService()
     private let networkClient = NetworkClient()
     private let storage = OAuth2TokenStorage()
     private let imageCache = ImageCache.default
@@ -18,7 +18,6 @@ final class ProfileImageService {
     private(set) var avatarURL: String?
     private(set) var avatarImage: UIImage?
     
-    // Уведомление о смене аватарки
     static let didChangeNotification = Notification.Name("ProfileImageProviderDidChange")
     
     func fetchProfileImageURL(username: String, completion: @escaping (Result<UIImage, Error>) -> Void) {
@@ -95,7 +94,7 @@ final class ProfileImageService {
                 print("⚠️ [ProfileImageService.fetchProfileImageURL] Заголовок Authorization отсутствует!")
             }
         }
-        task.resume() // 👈 БЕЗ ЭТОГО ЗАПРОС НЕ ВЫПОЛНЯЕТСЯ!
+        task.resume()
     }
 }
 

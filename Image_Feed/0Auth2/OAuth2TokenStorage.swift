@@ -12,7 +12,7 @@ import SwiftKeychainWrapper
 // MARK: - Сохранение токена (Bearer Token) в Keychain
 final class OAuth2TokenStorage {
     private let tokenKey = "AuthToken"
-
+    
     var token: String? {
         get {
             print("🔍 [OAuth2TokenStorage] Получение токена из Keychain")

@@ -56,7 +56,7 @@ final class ProfileService {
     // MARK: - Создание запроса
     private func makeProfileURLRequest(token: String) -> URLRequest? {
         print("🟢 [ProfileService] makeProfileURLRequest() вызван")
-        let baseURL = Constants.defaultBaseURL  // Используем напрямую, без guard let
+        let baseURL = Constants.defaultBaseURL
         
         guard let url = URL(string: "/me", relativeTo: baseURL) else {
             print("❌ Ошибка: Невозможно создать URL запроса профиля")
@@ -79,20 +79,20 @@ final class ProfileService {
             return
         }
         print("✅ [ProfileService.fetchProfile] Найден токен: \(token)")
-
+        
         assert(Thread.isMainThread)
-
+        
         guard let url = URL(string: "https://api.unsplash.com/me") else {
             completion(.failure(NSError(domain: "ProfileService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Неверный URL"])))
             return
         }
-
+        
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
         print("🔍 [ProfileService.fetchProfile] Формируем запрос: URL=\(url.absoluteString), Authorization=\(request.value(forHTTPHeaderField: "Authorization") ?? "не задано")")
-
+        
         networkClient.objectTask(for: request) { (result: Result<ProfileResult, Error>) in
             DispatchQueue.main.async {
                 switch result {

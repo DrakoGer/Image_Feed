@@ -5,11 +5,11 @@ final class ProfileViewController: UIViewController {
     
     private let avatarImageView: UIImageView = {
         let imageView = UIImageView()
-        imageView.image = UIImage(named: "UserAvatar") // Плейсхолдер
+        imageView.image = UIImage(named: "UserAvatar")
         imageView.layer.cornerRadius = 35
         imageView.clipsToBounds = true
         imageView.translatesAutoresizingMaskIntoConstraints = false
-        imageView.kf.indicatorType = .activity // Индикатор загрузки
+        imageView.kf.indicatorType = .activity
         return imageView
     }()
     
@@ -54,11 +54,11 @@ final class ProfileViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+        view.backgroundColor = #colorLiteral(red: 0.1019607843, green: 0.1058823529, blue: 0.1333333333, alpha: 1)
         setupUI()
         updateProfileInfo()
         setupObservers()
-        loadAvatar() // Вызов загрузки аватарки при старте
+        loadAvatar()
     }
     
     private func setupUI() {
