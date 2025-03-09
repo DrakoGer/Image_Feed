@@ -12,7 +12,7 @@
         <!--ImageList-->
         <scene sceneID="tne-QT-ifu">
             <objects>
-                <viewController title="ImageList" id="BYZ-38-t0r" customClass="ImagesListViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="ImagesListViewController" title="ImageList" useStoryboardIdentifierAsRestorationIdentifier="YES" id="BYZ-38-t0r" customClass="ImagesListViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="8bC-Xf-vdC">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -99,7 +99,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-123" y="431"/>
+            <point key="canvasLocation" x="-1341" y="207"/>
         </scene>
         <!--AuthViewController-->
         <scene sceneID="DdW-0m-Ywd">
@@ -171,7 +171,7 @@
             <objects>
                 <viewController id="YLl-lU-ppP" customClass="WebViewViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="EeV-x0-KpX">
-                        <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="886"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <subviews>
                             <wkWebView contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="LG4-Mr-Sng">
@@ -227,7 +227,7 @@
         <!--Tab Bar Controller-->
         <scene sceneID="Fif-ds-uVC">
             <objects>
-                <tabBarController storyboardIdentifier="TabBarViewController" id="XSf-nd-hwf" sceneMemberID="viewController">
+                <tabBarController storyboardIdentifier="TabBarViewController" id="XSf-nd-hwf" customClass="TabBarController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
                     <tabBar key="tabBar" contentMode="scaleToFill" insetsLayoutMarginsFromSafeArea="NO" id="0W7-pJ-Dm7">
                         <rect key="frame" x="0.0" y="0.0" width="393" height="49"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -237,10 +237,6 @@
                             <color key="backgroundColor" red="0.10196078431372549" green="0.10588235294117647" blue="0.13333333333333333" alpha="1" colorSpace="calibratedRGB"/>
                         </tabBarAppearance>
                     </tabBar>
-                    <connections>
-                        <segue destination="BYZ-38-t0r" kind="relationship" relationship="viewControllers" id="7Cf-B9-IJL"/>
-                        <segue destination="YID-7w-evW" kind="relationship" relationship="viewControllers" id="u87-KJ-QtN"/>
-                    </connections>
                 </tabBarController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="Wv0-zj-Cay" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
@@ -249,7 +245,7 @@
         <!--Profile-->
         <scene sceneID="oET-z6-ZMl">
             <objects>
-                <viewController title="Profile" id="YID-7w-evW" customClass="ProfileViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="ProfileViewController" title="Profile" useStoryboardIdentifierAsRestorationIdentifier="YES" id="YID-7w-evW" customClass="ProfileViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="Ln9-1v-vp9">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -261,7 +257,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="hat-DG-skt" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1310" y="431"/>
+            <point key="canvasLocation" x="-1342" y="910"/>
         </scene>
         <!--Single Image View Controller-->
         <scene sceneID="spe-mE-pzP">
@@ -337,7 +333,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="bhc-EI-oge" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="823" y="431"/>
+            <point key="canvasLocation" x="-259" y="207"/>
         </scene>
         <!--Navigation Controller-->
         <scene sceneID="KLv-uz-abm">
@@ -346,6 +342,7 @@
                     <toolbarItems/>
                     <navigationItem key="navigationItem" id="BNW-go-lQI"/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="als-2w-zbP">
+                        <rect key="frame" x="0.0" y="0.0" width="414" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
                     </navigationBar>
                     <nil name="viewControllers"/>
