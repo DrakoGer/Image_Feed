@@ -104,7 +104,7 @@
         <!--AuthViewController-->
         <scene sceneID="DdW-0m-Ywd">
             <objects>
-                <viewController title="AuthViewController" id="HgX-EA-0cC" customClass="AuthViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="AuthViewController" title="AuthViewController" id="HgX-EA-0cC" customClass="AuthViewController" customModule="Image_Feed" customModuleProvider="target" sceneMemberID="viewController">
                     <view key="view" contentMode="scaleToFill" id="cm3-sF-YX5">
                         <rect key="frame" x="0.0" y="0.0" width="414" height="896"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
