@@ -15,44 +15,8 @@ final class OAuth2Service {
     private let baseURL = "https://unsplash.com/oauth/token"
     private let storage = OAuth2TokenStorage()
     private let networkClient = NetworkClient()
+    
     private init() {}
-    
-    // MARK: - Запрос Токена
-    func makeOAuthTokenRequest(code: String) -> URLRequest? {
-        guard let baseURL = URL(string: "https://unsplash.com") else {
-            fatalError("Invalid base URL")
-        }
-        
-        var components = URLComponents()
-        components.scheme = baseURL.scheme
-        components.host = baseURL.host
-        components.path = "/oauth/token"
-        
-        components.queryItems = [
-            URLQueryItem(name: "client_id", value: Constants.accessKey),
-            URLQueryItem(name: "client_secret", value: Constants.secretKey),
-            URLQueryItem(name: "redirect_uri", value: Constants.redirectUri),
-            URLQueryItem(name: "code", value: code),
-            URLQueryItem(name: "grant_type", value: "authorization_code")
-        ]
-        
-        guard let url = components.url else {
-            fatalError("Failed to construct URL from components")
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        return request
-    }
-    
-    enum OAuthError: Error {
-        case invalidRequest
-        case networkError(Error)
-        case invalidHTTPResponse
-        case invalidStatusCode(Int)
-        case invalidData
-        case decodingFailed(Error)
-    }
     
     // MARK: - Извлечение токена
     func fetchAuthToken(code: String, completion: @escaping (Result<String, OAuthError>) -> Void) {
@@ -99,5 +63,42 @@ final class OAuth2Service {
         }
         self.task = task
         task.resume()
+    }
+
+    func makeOAuthTokenRequest(code: String) -> URLRequest? {
+        guard let baseURL = URL(string: "https://unsplash.com") else {
+            assertionFailure("Invalid base URL")
+            return nil
+        }
+        
+        var components = URLComponents()
+        components.scheme = baseURL.scheme
+        components.host = baseURL.host
+        components.path = "/oauth/token"
+        
+        components.queryItems = [
+            URLQueryItem(name: "client_id", value: Constants.accessKey),
+            URLQueryItem(name: "client_secret", value: Constants.secretKey),
+            URLQueryItem(name: "redirect_uri", value: Constants.redirectUri),
+            URLQueryItem(name: "code", value: code),
+            URLQueryItem(name: "grant_type", value: "authorization_code")
+        ]
+        
+        guard let url = components.url else {
+            fatalError("Failed to construct URL from components")
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        return request
+    }
+    
+    enum OAuthError: Error {
+        case invalidRequest
+        case networkError(Error)
+        case invalidHTTPResponse
+        case invalidStatusCode(Int)
+        case invalidData
+        case decodingFailed(Error)
     }
 }

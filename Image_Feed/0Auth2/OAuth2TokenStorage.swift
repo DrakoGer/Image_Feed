@@ -5,7 +5,6 @@
 //  Created by Yura on 09.02.25.
 //
 
-import UIKit
 import Foundation
 import SwiftKeychainWrapper
 

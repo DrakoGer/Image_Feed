@@ -20,6 +20,14 @@ final class ProfileImageService {
     
     static let didChangeNotification = Notification.Name("ProfileImageProviderDidChange")
     
+    enum HTTPMethod: String {
+        case get = "GET"
+        case post = "POST"
+        // Другие методы
+    }
+    
+    private init() {}
+    
     func fetchProfileImageURL(username: String, completion: @escaping (Result<UIImage, Error>) -> Void) {
         assert(Thread.isMainThread)
         print("🟢 [ProfileImageService.fetchProfileImageURL] вызван с username: \(username)")
@@ -45,7 +53,7 @@ final class ProfileImageService {
         }
         
         var request = URLRequest(url: url)
-        request.httpMethod = "GET"
+        request.httpMethod = HTTPMethod.get.rawValue
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         let task = networkClient.objectTask(for: request) { [weak self] (result: Result<UserResult, Error>) in
