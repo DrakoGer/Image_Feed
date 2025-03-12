@@ -65,7 +65,7 @@ final class OAuth2Service {
         task.resume()
     }
 
-    func makeOAuthTokenRequest(code: String) -> URLRequest? {
+    private func makeOAuthTokenRequest(code: String) -> URLRequest? {
         guard let baseURL = URL(string: "https://unsplash.com") else {
             assertionFailure("Invalid base URL")
             return nil
@@ -85,7 +85,8 @@ final class OAuth2Service {
         ]
         
         guard let url = components.url else {
-            fatalError("Failed to construct URL from components")
+            assertionFailure("Failed to construct URL from components")
+            return nil
         }
         
         var request = URLRequest(url: url)

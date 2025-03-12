@@ -23,7 +23,6 @@ final class ProfileImageService {
     enum HTTPMethod: String {
         case get = "GET"
         case post = "POST"
-        // Другие методы
     }
     
     private init() {}
