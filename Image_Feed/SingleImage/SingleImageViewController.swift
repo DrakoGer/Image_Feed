@@ -6,12 +6,14 @@
 //
 
 import UIKit
+import Kingfisher
 
 final class SingleImageViewController: UIViewController {
+    
+    
     var image: UIImage? {
         didSet {
             guard isViewLoaded, let image else { return }
-            
             imageView.image = image
             imageView.frame.size = image.size
             rescaleAndCenterImageInScrollView(image: image)
@@ -20,6 +22,13 @@ final class SingleImageViewController: UIViewController {
     }
     
     @IBOutlet weak var imageView: UIImageView!
+    
+    var imageURL: URL? {
+            didSet {
+                guard isViewLoaded else { return }
+                loadImage()
+            }
+        }
     
     private func rescaleAndCenterImageInScrollView(image: UIImage) {
         let minZoomScale = scrollView.minimumZoomScale
@@ -60,11 +69,7 @@ final class SingleImageViewController: UIViewController {
         scrollView.maximumZoomScale = 1.25
         scrollView.delegate = self
         
-        guard let image else { return }
-        imageView.image = image
-        imageView.frame.size = image.size
-        rescaleAndCenterImageInScrollView(image: image)
-        centerImageInScrollView()
+        loadImage()
     }
     
     @IBAction func didTapBackButton(_ sender: Any) {
@@ -79,6 +84,25 @@ final class SingleImageViewController: UIViewController {
         )
         present(share, animated: true, completion: nil)
     }
+    
+    private func loadImage() {
+        
+        guard let url = imageURL else { return }
+        
+        // Вариант с Kingfisher
+        imageView.kf.setImage(with: url) { [weak self] result in
+            guard let self = self else { return }
+            switch result {
+            case .success(let value):
+                self.image = value.image // Устанавливаем изображение после загрузки
+                print("Изображение загружено: \(value.image.size)")
+            case .failure(let error):
+                print("Ошибка загрузки: \(error)")
+            }
+        }
+    }
+    
+    
     
     @IBOutlet weak var scrollView: UIScrollView!
 }
