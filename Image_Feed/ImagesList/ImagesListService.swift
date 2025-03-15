@@ -11,8 +11,9 @@ final class ImagesListService {
     static let shared = ImagesListService()
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
     
-    private (set) var photos: [Photo] = []
+    private(set) var photos: [Photo] = []
     private var lastLoadedPage: Int?
+    private let photosPerPage = 10
     private var task: URLSessionDataTask?
     private let urlSession = URLSession.shared
     
@@ -70,13 +71,27 @@ final class ImagesListService {
                 return
             }
             
+            // Добавьте отладочный вывод перед декодированием
+                if let dataString = String(data: data, encoding: .utf8) {
+                    print("🔵 [ImagesListService] Полный JSON-ответ перед декодированием: \(dataString)")
+                } else {
+                    print("🔴 [ImagesListService] Не удалось преобразовать данные в строку")
+                }
+            
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
-                decoder.dateDecodingStrategy = .iso8601
+                // Убираем .iso8601, так как теперь парсим как String
+                
+                if let dataString = String(data: data, encoding: .utf8) {
+                    print("🔵 [ImagesListService] Данные перед декодированием: \(dataString)")
+                }
                 
                 let photoResults = try decoder.decode([PhotoResult].self, from: data)
                 print("🔵 [ImagesListService] Успешно декодировано \(photoResults.count) объектов")
+                
+                // Создаём форматтер для преобразования String в Date
+                let dateFormatter = ISO8601DateFormatter()
                 
                 var newPhotos: [Photo] = []
                 let existingIDs = Set(self.photos.map { $0.id })
@@ -96,10 +111,18 @@ final class ImagesListService {
                         continue
                     }
                     
+                    // Преобразуем createdAt из String в Date
+                    let createdAt: Date?
+                    if let createdAtString = photoResult.createdAt {
+                        createdAt = dateFormatter.date(from: createdAtString)
+                    } else {
+                        createdAt = nil
+                    }
+                    
                     let photo = Photo(
                         id: photoResult.id,
                         size: CGSize(width: Double(width), height: Double(height)),
-                        createdAt: photoResult.createdAt,
+                        createdAt: createdAt,
                         welcomeDescription: photoResult.description,
                         thumbImageURL: thumb,
                         largeImageURL: full,
@@ -117,27 +140,50 @@ final class ImagesListService {
                 }
             } catch {
                 if let dataString = String(data: data, encoding: .utf8) {
-                    print("🔴 [ImagesListService] Данные от сервера: \(dataString)")
+                    print("🔴 [ImagesListService] Данные от сервера при ошибке: \(dataString)")
                 }
                 print("🔴 [ImagesListService] Ошибка декодирования: \(error.localizedDescription)")
-                // Здесь не используем throw, просто логируем ошибку
+                if let decodingError = error as? DecodingError {
+                    switch decodingError {
+                    case .dataCorrupted(let context):
+                        print("🔴 Data corrupted: \(context.debugDescription)")
+                    case .keyNotFound(let key, let context):
+                        print("🔴 Key '\(key)' not found: \(context.debugDescription)")
+                    case .typeMismatch(let type, let context):
+                        print("🔴 Type mismatch for \(type): \(context.debugDescription)")
+                    case .valueNotFound(let type, let context):
+                        print("🔴 Value not found for \(type): \(context.debugDescription)")
+                    @unknown default:
+                        print("🔴 Unknown decoding error")
+                    }
+                }
             }
         }
         
         self.task = task
         task.resume()
-    
     }
+}
+
+struct Photo {
+    let id: String
+    let size: CGSize
+    let createdAt: Date?
+    let welcomeDescription: String?
+    let thumbImageURL: String
+    let largeImageURL: String
+    let fullImageURL: String
+    let isLiked: Bool
 }
 
 struct PhotoResult: Decodable {
     let id: String
-    let createdAt: Date?
+    let createdAt: String? // Изменяем тип на String?
     let width: Int?
     let height: Int?
     let description: String?
-    let likedByUser: Bool? // Сделали опциональным
-    let urls: UrlsResult? // Сделали опциональным
+    let likedByUser: Bool?
+    let urls: UrlsResult?
     let likes: Int?
     let user: UserResult?
     
