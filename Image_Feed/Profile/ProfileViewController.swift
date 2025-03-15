@@ -131,7 +131,7 @@ final class ProfileViewController: UIViewController {
     // MARK: - Обновление данных профиля
     private func updateProfileInfo() {
         guard let profile = ProfileService.shared.profile else { return }
-        print("🔍 [ProfileViewController.updateProfileInfo] Профиль: username=\(profile.username ?? "nil"), name=\(profile.name), loginName=\(profile.loginName)")
+        print("🔍 [ProfileViewController.updateProfileInfo] Профиль: username=\(profile.username), name=\(profile.name), loginName=\(profile.loginName)")
         nameLabel.text = profile.name
         emailLabel.text = profile.loginName
         descriptionLabel.text = profile.bio
