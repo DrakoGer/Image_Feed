@@ -96,7 +96,7 @@ final class ProfileViewController: UIViewController {
             self?.updateAvatar()
         }
     }
-    
+    private var isPlaceholderVisible: Bool = false
     // MARK: - Обновление аватарки
     private func updateAvatar() {
         if let image = ProfileImageService.shared.avatarImage {
@@ -104,18 +104,51 @@ final class ProfileViewController: UIViewController {
             print("🔄 [ProfileViewController.updateAvatar] Аватарка обновлена из сервиса")
         } else {
             print("⚠️ [ProfileViewController.updateAvatar] Аватарка не найдена в сервисе")
+            
+            guard let avatarURLString = ProfileImageService.shared.avatarURL, !avatarURLString.isEmpty else {
+                print("❌ [ProfileViewController.updateAvatar] Ошибка: avatarURL отсутствует или пустое значение")
+                avatarImageView.image = UIImage(named: "UserPhoto")  // Устанавливаем заглушку
+                return
+            }
+            
+            guard let url = URL(string: avatarURLString) else {
+                print("❌ [ProfileViewController.updateAvatar] Ошибка: Некорректный URL: \(avatarURLString)")
+                avatarImageView.image = UIImage(named: "UserPhoto")  // Заглушка на случай неверного URL
+                return
+            }
+            
+            let processor = RoundCornerImageProcessor(cornerRadius: 50, backgroundColor: .ypBlack)
+            
+            // Загрузка изображения с использованием Kingfisher
+            avatarImageView.kf.setImage(
+                with: url,
+                placeholder: UIImage(named: "UserPhoto"),
+                options: [
+                    .processor(processor),
+                    .transition(.fade(0.3))
+                ]) { result in
+                    switch result {
+                    case .success(let value):
+                        print("✅ [ProfileViewController.updateAvatar] Аватарка успешно загружена: \(value.source.url?.absoluteString ?? "неизвестно")")
+                    case .failure(let error):
+                        print("❌ [ProfileViewController.updateAvatar] Ошибка загрузки: \(error.localizedDescription)")
+                        self.avatarImageView.image = UIImage(named: "UserPhoto")  // Заглушка в случае ошибки
+                    }
+                }
         }
     }
-    
+    private func showPlaceholder() {
+        avatarImageView.image = UIImage(named: "UserPhoto")
+        isPlaceholderVisible = true
+        print("✅✅✅")
+    }
+
     // MARK: - Загрузка аватарки
     private func loadAvatar() {
-        print("🟢 [ProfileViewController.loadAvatar] Начало загрузки аватарки")
-        guard let profile = ProfileService.shared.profile else {
-            print("❌ [ProfileViewController.loadAvatar] Ошибка: профиль отсутствует")
-            return
-        }
+        guard let profile = ProfileService.shared.profile else { return }
         let username = profile.username
         print("✅ [ProfileViewController.loadAvatar] Username: \(username)")
+        
         profileImageService.fetchProfileImageURL(username: username) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -127,6 +160,7 @@ final class ProfileViewController: UIViewController {
             }
         }
     }
+
     
     // MARK: - Обновление данных профиля
     private func updateProfileInfo() {
@@ -138,6 +172,22 @@ final class ProfileViewController: UIViewController {
     }
     
     @objc private func logoutButtonTapped() {
-        // TODO: - Добавить логику при нажатии на кнопку
+        showLogoutAler()
+    }
+    
+    private func showLogoutAler() {
+        let alert = UIAlertController(title: "Вы покидаете приложение!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
+        
+        let yesAction = UIAlertAction(title: "Да", style: .default) { _ in
+            ProfileLogoutService.shared.logout()
+            UIApplication.shared.windows.first?.rootViewController = SplashViewController()
+        }
+        
+        let noAction = UIAlertAction(title: "Нет", style: .cancel)
+        
+        alert.addAction(yesAction)
+        alert.addAction(noAction)
+        
+        present(alert, animated: true)
     }
 }

@@ -53,6 +53,13 @@ final class ProfileService {
     
     private init() {}
     
+    static let didChangeNotification = Notification.Name("ProfileServiceDidChange")
+    
+    func updateProfile(_ profile: Profile) {
+        self.profile = profile
+        NotificationCenter.default.post(name: ProfileService.didChangeNotification, object: nil)
+    }
+    
     // MARK: - Создание запроса
     private func makeProfileURLRequest(token: String) -> URLRequest? {
         print("🟢 [ProfileService] makeProfileURLRequest() вызван")
@@ -68,6 +75,12 @@ final class ProfileService {
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         
         return request
+    }
+    
+    func clearProfile() {
+        profile = nil
+        NotificationCenter.default.post(name: ProfileService.didChangeNotification, object: self)
+        print("Профиль удален")
     }
     
     // MARK: - Получение профиля

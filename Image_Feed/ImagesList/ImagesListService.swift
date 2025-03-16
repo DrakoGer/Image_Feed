@@ -7,6 +7,11 @@
 
 import Foundation
 
+enum NetworkError: Error {
+    case badURL
+    case decodeError
+}
+
 final class ImagesListService {
     static let shared = ImagesListService()
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
@@ -18,6 +23,13 @@ final class ImagesListService {
     private let urlSession = URLSession.shared
     
     private init() {}
+    
+    func clearPhotos() {
+        photos.removeAll()
+        lastLoadedPage = 0
+        NotificationCenter.default.post(name: ImagesListService.didChangeNotification, object: self)
+        print("Фото и данные страниц удалены")
+    }
     
     func fetchPhotosNextPage() {
         guard task == nil else {
@@ -37,113 +49,85 @@ final class ImagesListService {
         ]
         
         guard let url = urlComponents.url else {
-            print("🔴 [ImagesListService] Неверный URL")
             return
         }
         
         var request = URLRequest(url: url)
         if let token = OAuth2TokenStorage().token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-            print("🔵 [ImagesListService] Токен: \(token)")
-        } else {
-            print("🔴 [ImagesListService] Токен не найден")
-            return
         }
-        
-        print("🔵 [ImagesListService] Запрос: \(url.absoluteString)")
         
         let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
+            
             self.task = nil
             
             if let error = error {
-                print("🔴 [ImagesListService] Ошибка сети: \(error.localizedDescription)")
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
                     self.fetchPhotosNextPage()
                 }
                 return
             }
             
-            guard let data = data, let response = response as? HTTPURLResponse, (200...299).contains(response.statusCode) else {
+            guard let data = data,
+                  let response = response as? HTTPURLResponse,
+                  (200...299).contains(response.statusCode) else {
                 let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
                 let dataString = String(data: data ?? Data(), encoding: .utf8) ?? "nil"
-                print("🔴 [ImagesListService] Неверный ответ сервера, статус: \(statusCode), данные: \(dataString)")
                 return
             }
-            
-            if let dataString = String(data: data, encoding: .utf8) {
-                print("🔵 [ImagesListService] Полный JSON-ответ перед декодированием: \(dataString)")
-            } else {
-                print("🔴 [ImagesListService] Не удалось преобразовать данные в строку")
-            }
-            
+                        
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
                 
                 let photoResults = try decoder.decode([PhotoResult].self, from: data)
-                print("🔵 [ImagesListService] Успешно декодировано \(photoResults.count) объектов")
-                
-                let dateFormatter = ISO8601DateFormatter()
-                
-                var newPhotos: [Photo] = []
-                let existingIDs = Set(self.photos.map { $0.id })
-                
-                for photoResult in photoResults {
-                    let urls = photoResult.urls
-                    
-                    if existingIDs.contains(photoResult.id) {
-                        print("🔴 [ImagesListService] Пропущен дубликат с ID: \(photoResult.id)")
-                        continue
-                    }
-                    
-                    let createdAt: Date?
-                    if let createdAtString = photoResult.createdAt {
-                        createdAt = dateFormatter.date(from: createdAtString)
-                    } else {
-                        createdAt = nil
-                    }
-                    
-                    let photo = Photo(
-                        id: photoResult.id,
-                        size: CGSize(width: Double(photoResult.width), height: Double(photoResult.height)),
-                        createdAt: createdAt,
-                        welcomeDescription: photoResult.description,
-                        thumbImageURL: urls.thumb,
-                        largeImageURL: urls.full,
-                        fullImageURL: urls.full,
-                        isLiked: photoResult.likedByUser
-                    )
-                    newPhotos.append(photo)
-                }
+                let photos = photoResults.map(Photo.init)
                 
                 DispatchQueue.main.async {
-                    self.photos.append(contentsOf: newPhotos)
+                    self.photos.append(contentsOf: photos)
                     self.lastLoadedPage = nextPage
                     NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
-                    print("🔵 [ImagesListService] Загружено \(newPhotos.count) фото, всего: \(self.photos.count)")
                 }
             } catch {
-                if let dataString = String(data: data, encoding: .utf8) {
-                    print("🔴 [ImagesListService] Данные от сервера при ошибке: \(dataString)")
-                }
-                print("🔴 [ImagesListService] Ошибка декодирования: \(error.localizedDescription)")
-                if let decodingError = error as? DecodingError {
-                    switch decodingError {
-                    case .dataCorrupted(let context):
-                        print("🔴 Data corrupted: \(context.debugDescription)")
-                    case .keyNotFound(let key, let context):
-                        print("🔴 Key '\(key)' not found: \(context.debugDescription)")
-                    case .typeMismatch(let type, let context):
-                        print("🔴 Type mismatch for \(type): \(context.debugDescription)")
-                    case .valueNotFound(let type, let context):
-                        print("🔴 Value not found for \(type): \(context.debugDescription)")
-                    @unknown default:
-                        print("🔴 Unknown decoding error")
-                    }
-                }
+                print("🔴 \(error.localizedDescription)")
             }
         }
+        self.task = task
+        task.resume()
+    }
+    
+    func changeLike(photoId: String, isLike: Bool, _ completion: @escaping (Result<Void, Error>) -> Void) {
+        guard let url = URL(string: "https://api.unsplash.com/photos/\(photoId)/like") else {
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = isLike ? "POST" : "DELETE"
+        if let token = OAuth2TokenStorage().token {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+
+        let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
+            guard let self = self else { return }
+            self.task = nil
+        
+            if let error = error {
+                DispatchQueue.main.async {
+                    completion(.failure(error))
+                }
+                
+            }
+            
+            guard let response = response as? HTTPURLResponse,
+                  (200...299).contains(response.statusCode) else {
+                return
+            }
+            DispatchQueue.main.async {
+                completion(.success(()))
+            }
+        }
+        
         self.task = task
         task.resume()
     }
@@ -157,16 +141,6 @@ struct PhotoResult: Decodable {
     let description: String?
     let likedByUser: Bool
     let urls: URLs
-    
-//    enum CodingKeys: String, CodingKey {
-//        case id
-//        case createdAt = "created_at"
-//        case width
-//        case height
-//        case description
-//        case likedByUser = "liked_by_user"
-//        case urls
-//    }
 }
 
 struct URLs: Decodable {
@@ -185,7 +159,26 @@ struct Photo {
     let thumbImageURL: String
     let largeImageURL: String
     let fullImageURL: String
-    let isLiked: Bool
+    var isLiked: Bool
+    
+    mutating func toggleLike() {
+        isLiked.toggle()
+    }
 }
 
-
+extension Photo {
+    init(photoResult: PhotoResult) {
+        id = photoResult.id
+        size = CGSize(width: Double(photoResult.width), height: Double(photoResult.height))
+        createdAt = if let createdAt = photoResult.createdAt {
+            ISO8601DateFormatter().date(from: createdAt)
+        } else {
+            nil
+        }
+        welcomeDescription = photoResult.description
+        thumbImageURL = photoResult.urls.thumb
+        largeImageURL = photoResult.urls.full
+        fullImageURL = photoResult.urls.full
+        isLiked = photoResult.likedByUser
+    }
+}

@@ -11,6 +11,7 @@ import Kingfisher
 final class ImagesListViewController: UIViewController {
     
     private let showSingleImageSegueIdentifier = "ShowSingleImage"
+    var presenter: ImagesListPresenter?
     
     // MARK: - Outlets
     @IBOutlet private weak var tableView: UITableView!
@@ -18,22 +19,13 @@ final class ImagesListViewController: UIViewController {
     // MARK: - Properties
     private var photos: [Photo] = [] // Локальный массив фотографий
     private let imagesListService = ImagesListService.shared
-    private let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        return formatter
-    }()
-    
+
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
-        print("🔵 [ImagesListViewController] viewDidLoad вызван")
-        
         tableView.rowHeight = UITableView.automaticDimension
         tableView.estimatedRowHeight = 200
         tableView.contentInset = UIEdgeInsets(top: 12, left: 0, bottom: 12, right: 0)
-//        tableView.register(UINib(nibName: "ImagesListCell", bundle: nil), forCellReuseIdentifier: ImagesListCell.reuseIdentifier)
         
         tableView.dataSource = self
         tableView.delegate = self
@@ -46,7 +38,6 @@ final class ImagesListViewController: UIViewController {
             object: nil
         )
         
-        // Начальная загрузка
         imagesListService.fetchPhotosNextPage()
     }
     
@@ -80,10 +71,32 @@ extension ImagesListViewController: UITableViewDataSource {
             return UITableViewCell()
         }
         cell.selectionStyle = .none
-        
-        configCell(for: cell, with: indexPath)
+        let photo = photos[indexPath.row]
+        cell.configure(with: photo)
+        cell.onLikeTapped = { [weak self] in
+            self?.likeIsTapped(for: photo, indexPath: indexPath)
+        }
         
         return cell
+    }
+    
+    private func likeIsTapped(for photo: Photo, indexPath: IndexPath) {
+        UIBlockingProgressHUD.show()
+        
+        let photoId = photo.id
+        let isLiked = photo.isLiked
+        
+        imagesListService.changeLike(photoId: photoId, isLike: isLiked) { [weak self] result in
+            UIBlockingProgressHUD.dismiss()
+            switch result {
+            case .success:
+                self?.photos[indexPath.row].toggleLike()
+                self?.tableView.reloadRows(at: [indexPath], with: .automatic)
+            case .failure(let failure):
+                print(failure.localizedDescription)
+            }
+        }
+
     }
 }
 
@@ -97,51 +110,110 @@ extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         if indexPath.row + 1 == photos.count {
             imagesListService.fetchPhotosNextPage()
-            print("🔵 [ImagesListViewController] Запрошена следующая страница при прокрутке")
         }
     }
+    
+    func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
+            let photo = photos[indexPath.row]
+            
+            let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
+            let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
+            let imageWidth = photo.size.width
+            let scale = imageViewWidth / imageWidth
+            let cellHeight = photo.size.height * scale + imageInsets.top + imageInsets.bottom
+            return cellHeight
+        }
 }
 
 // MARK: - Helpers
 extension ImagesListViewController {
-    private func configCell(for cell: ImagesListCell, with indexPath: IndexPath) {
-        let photo = photos[indexPath.row]
-        
-        // Загрузка изображения с заглушкой и индикатором
-        let placeholder = UIImage(named: "placeholder") // Убедись, что заглушка добавлена в проект
-        cell.cellImage.kf.indicatorType = .activity
-        cell.cellImage.kf.setImage(
-            with: URL(string: photo.thumbImageURL),
-            placeholder: placeholder,
-            options: [.transition(.fade(0.2))],
-            completionHandler: { [weak self] result in
-                guard let self = self else { return }
-                switch result {
-                case .success:
-                    tableView.reloadRows(at: [indexPath], with: .automatic) // Обновляем высоту
-                case .failure(let error):
-                    print("🔴 [ImagesListViewController] Ошибка загрузки изображения: \(error)")
-                }
-            }
-        )
-        
-        cell.dateLabel.text = dateFormatter.string(from: photo.createdAt ?? Date())
-        let likeImage = photo.isLiked ? UIImage(named: "likeActive") : UIImage(named: "likeNotActive")
-        cell.likeButton.setImage(likeImage, for: .normal)
-    }
-    
     @objc private func updateTableViewAnimated() {
+        print(#function)
+        
         let oldCount = photos.count
         let newCount = imagesListService.photos.count
         photos = imagesListService.photos
+        tableView.reloadData()
+//        if oldCount != newCount {
+//            tableView.performBatchUpdates {
+//                let indexPaths = (oldCount..<newCount).map { IndexPath(row: $0, section: 0) }
+//                tableView.insertRows(at: indexPaths, with: .automatic)
+//            } completion: { _ in
+////                print("🔵 [ImagesListViewController] Таблица обновлена, добавлено \(newCount - oldCount) строк")
+//            }
+//        }
+    }
+}
+
+
+
+//// //// / 032------------
+extension ImagesListViewController: ImagesListView {
+    func reload() {
+        updateTableViewAnimated()
+    }
+    
+    func showError(_ message: String) {
         
-        if oldCount != newCount {
-            tableView.performBatchUpdates {
-                let indexPaths = (oldCount..<newCount).map { IndexPath(row: $0, section: 0) }
-                tableView.insertRows(at: indexPaths, with: .automatic)
-            } completion: { _ in
-                print("🔵 [ImagesListViewController] Таблица обновлена, добавлено \(newCount - oldCount) строк")
+    }
+}
+
+protocol ImagesListView: AnyObject {
+    func reload()
+    func showError(_ message: String)
+}
+
+protocol ImagesListPresenter {
+    func viewDidLoad()
+    func changeLike(photoId: String, isLike: Bool)
+    func imageTapped(photoId: String)
+}
+
+class ImagesListPresenterImpl: ImagesListPresenter {
+    weak var view: ImagesListView?
+    let imageService: ImageService
+    var page: Int = 0
+    
+    init(
+        view: ImagesListView,
+        imageService: ImageService
+    ) {
+        self.view = view
+        self.imageService = imageService
+    }
+    
+    func viewDidLoad() {
+        loadImages()
+    }
+    
+    func changeLike(photoId: String, isLike: Bool) {
+        
+    }
+    
+    func imageTapped(photoId: String) {
+        
+    }
+    
+    private func loadImages() {
+        imageService.loadImages { [weak self] result in
+            switch result {
+            case .success(let success):
+                self?.view?.reload()
+                self?.page += 10
+                
+            case .failure(let failure):
+                self?.view?.showError(failure.localizedDescription)
             }
         }
+    }
+}
+
+protocol ImageService {
+    func loadImages(completion: (Result<Void, Error>) -> Void)
+}
+
+class ImageServiceImpl: ImageService {
+    func loadImages(completion: (Result<Void, any Error>) -> Void) {
+        completion(.success(()))
     }
 }

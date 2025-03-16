@@ -46,14 +46,13 @@ struct NetworkClient: NetworkRouting {
     ) -> URLSessionTask {
         
         let task = URLSession.shared.dataTask(with: request) { data, response, error in
-            // Обработка ошибок сети
             if let error = error {
                 print("❌ [NetworkClient] Ошибка запроса: \(error.localizedDescription)")
                 completion(.failure(error))
                 return
             }
             
-            // Проверка статуса HTTP-ответа
+            
             if let response = response as? HTTPURLResponse,
                !(200..<300).contains(response.statusCode) {
                 print("❌ [NetworkClient] Ошибка HTTP: \(response.statusCode)")
@@ -62,14 +61,14 @@ struct NetworkClient: NetworkRouting {
                 return
             }
             
-            // Проверка наличия данных
+            
             guard let data = data else {
                 print("❌ [NetworkClient] Ошибка: Данные отсутствуют")
                 completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
                 return
             }
+           
             
-            // Декодирование JSON
             do {
                 let decoder = JSONDecoder()
                 let decodedObject = try decoder.decode(T.self, from: data)
