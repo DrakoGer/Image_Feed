@@ -71,47 +71,32 @@ final class ImagesListService {
                 return
             }
             
-            // Добавьте отладочный вывод перед декодированием
-                if let dataString = String(data: data, encoding: .utf8) {
-                    print("🔵 [ImagesListService] Полный JSON-ответ перед декодированием: \(dataString)")
-                } else {
-                    print("🔴 [ImagesListService] Не удалось преобразовать данные в строку")
-                }
+            if let dataString = String(data: data, encoding: .utf8) {
+                print("🔵 [ImagesListService] Полный JSON-ответ перед декодированием: \(dataString)")
+            } else {
+                print("🔴 [ImagesListService] Не удалось преобразовать данные в строку")
+            }
             
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
-                // Убираем .iso8601, так как теперь парсим как String
-                
-                if let dataString = String(data: data, encoding: .utf8) {
-                    print("🔵 [ImagesListService] Данные перед декодированием: \(dataString)")
-                }
                 
                 let photoResults = try decoder.decode([PhotoResult].self, from: data)
                 print("🔵 [ImagesListService] Успешно декодировано \(photoResults.count) объектов")
                 
-                // Создаём форматтер для преобразования String в Date
                 let dateFormatter = ISO8601DateFormatter()
                 
                 var newPhotos: [Photo] = []
                 let existingIDs = Set(self.photos.map { $0.id })
                 
                 for photoResult in photoResults {
-                    guard let urls = photoResult.urls,
-                          let thumb = urls.thumb,
-                          let full = urls.full,
-                          let width = photoResult.width,
-                          let height = photoResult.height else {
-                        print("🔴 [ImagesListService] Пропущена фотография с ID \(photoResult.id): отсутствуют обязательные поля")
-                        continue
-                    }
+                    let urls = photoResult.urls
                     
                     if existingIDs.contains(photoResult.id) {
                         print("🔴 [ImagesListService] Пропущен дубликат с ID: \(photoResult.id)")
                         continue
                     }
                     
-                    // Преобразуем createdAt из String в Date
                     let createdAt: Date?
                     if let createdAtString = photoResult.createdAt {
                         createdAt = dateFormatter.date(from: createdAtString)
@@ -121,13 +106,13 @@ final class ImagesListService {
                     
                     let photo = Photo(
                         id: photoResult.id,
-                        size: CGSize(width: Double(width), height: Double(height)),
+                        size: CGSize(width: Double(photoResult.width), height: Double(photoResult.height)),
                         createdAt: createdAt,
                         welcomeDescription: photoResult.description,
-                        thumbImageURL: thumb,
-                        largeImageURL: full,
-                        fullImageURL: full,
-                        isLiked: photoResult.likedByUser ?? false
+                        thumbImageURL: urls.thumb,
+                        largeImageURL: urls.full,
+                        fullImageURL: urls.full,
+                        isLiked: photoResult.likedByUser
                     )
                     newPhotos.append(photo)
                 }
@@ -159,10 +144,37 @@ final class ImagesListService {
                 }
             }
         }
-        
         self.task = task
         task.resume()
     }
+}
+
+struct PhotoResult: Decodable {
+    let id: String
+    let createdAt: String?
+    let width: Int
+    let height: Int
+    let description: String?
+    let likedByUser: Bool
+    let urls: URLs
+    
+//    enum CodingKeys: String, CodingKey {
+//        case id
+//        case createdAt = "created_at"
+//        case width
+//        case height
+//        case description
+//        case likedByUser = "liked_by_user"
+//        case urls
+//    }
+}
+
+struct URLs: Decodable {
+    let raw: String
+    let full: String
+    let regular: String
+    let small: String
+    let thumb: String
 }
 
 struct Photo {
@@ -174,48 +186,6 @@ struct Photo {
     let largeImageURL: String
     let fullImageURL: String
     let isLiked: Bool
-}
-
-struct PhotoResult: Decodable {
-    let id: String
-    let createdAt: String? // Изменяем тип на String?
-    let width: Int?
-    let height: Int?
-    let description: String?
-    let likedByUser: Bool?
-    let urls: UrlsResult?
-    let likes: Int?
-    let user: UserResult?
-    
-    enum CodingKeys: String, CodingKey {
-        case id
-        case createdAt = "created_at"
-        case width
-        case height
-        case description
-        case likedByUser = "liked_by_user"
-        case urls
-        case likes
-        case user
-    }
-}
-
-struct UrlsResult: Decodable {
-    let raw: String?
-    let full: String?
-    let regular: String?
-    let small: String?
-    let thumb: String?
-    let smallS3: String?
-    
-    enum CodingKeys: String, CodingKey {
-        case raw
-        case full
-        case regular
-        case small
-        case thumb
-        case smallS3 = "small_s3"
-    }
 }
 
 
