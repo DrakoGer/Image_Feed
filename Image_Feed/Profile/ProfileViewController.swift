@@ -54,7 +54,7 @@ final class ProfileViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = #colorLiteral(red: 0.1019607843, green: 0.1058823529, blue: 0.1333333333, alpha: 1)
+        view.backgroundColor = UIColor(named: "YP Black")
         setupUI()
         updateProfileInfo()
         setupObservers()
@@ -96,7 +96,7 @@ final class ProfileViewController: UIViewController {
             self?.updateAvatar()
         }
     }
-    private var isPlaceholderVisible: Bool = false
+    
     // MARK: - Обновление аватарки
     private func updateAvatar() {
         if let image = ProfileImageService.shared.avatarImage {
@@ -107,19 +107,18 @@ final class ProfileViewController: UIViewController {
             
             guard let avatarURLString = ProfileImageService.shared.avatarURL, !avatarURLString.isEmpty else {
                 print("❌ [ProfileViewController.updateAvatar] Ошибка: avatarURL отсутствует или пустое значение")
-                avatarImageView.image = UIImage(named: "UserPhoto")  // Устанавливаем заглушку
+                avatarImageView.image = UIImage(named: "UserPhoto")
                 return
             }
             
             guard let url = URL(string: avatarURLString) else {
                 print("❌ [ProfileViewController.updateAvatar] Ошибка: Некорректный URL: \(avatarURLString)")
-                avatarImageView.image = UIImage(named: "UserPhoto")  // Заглушка на случай неверного URL
+                avatarImageView.image = UIImage(named: "UserPhoto")
                 return
             }
             
             let processor = RoundCornerImageProcessor(cornerRadius: 50, backgroundColor: .ypBlack)
             
-            // Загрузка изображения с использованием Kingfisher
             avatarImageView.kf.setImage(
                 with: url,
                 placeholder: UIImage(named: "UserPhoto"),
@@ -132,17 +131,12 @@ final class ProfileViewController: UIViewController {
                         print("✅ [ProfileViewController.updateAvatar] Аватарка успешно загружена: \(value.source.url?.absoluteString ?? "неизвестно")")
                     case .failure(let error):
                         print("❌ [ProfileViewController.updateAvatar] Ошибка загрузки: \(error.localizedDescription)")
-                        self.avatarImageView.image = UIImage(named: "UserPhoto")  // Заглушка в случае ошибки
+                        self.avatarImageView.image = UIImage(named: "UserPhoto")
                     }
                 }
         }
     }
-    private func showPlaceholder() {
-        avatarImageView.image = UIImage(named: "UserPhoto")
-        isPlaceholderVisible = true
-        print("✅✅✅")
-    }
-
+    
     // MARK: - Загрузка аватарки
     private func loadAvatar() {
         guard let profile = ProfileService.shared.profile else { return }
@@ -160,7 +154,6 @@ final class ProfileViewController: UIViewController {
             }
         }
     }
-
     
     // MARK: - Обновление данных профиля
     private func updateProfileInfo() {
@@ -176,7 +169,7 @@ final class ProfileViewController: UIViewController {
     }
     
     private func showLogoutAler() {
-        let alert = UIAlertController(title: "Вы покидаете приложение!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
+        let alert = UIAlertController(title: "Пока, пока!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
         
         let yesAction = UIAlertAction(title: "Да", style: .default) { _ in
             ProfileLogoutService.shared.logout()

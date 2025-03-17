@@ -11,7 +11,6 @@ import Kingfisher
 final class ImagesListViewController: UIViewController {
     
     private let showSingleImageSegueIdentifier = "ShowSingleImage"
-    var presenter: ImagesListPresenter?
     
     // MARK: - Outlets
     @IBOutlet private weak var tableView: UITableView!
@@ -19,7 +18,7 @@ final class ImagesListViewController: UIViewController {
     // MARK: - Properties
     private var photos: [Photo] = [] // Локальный массив фотографий
     private let imagesListService = ImagesListService.shared
-
+    
     // MARK: - Lifecycle
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -30,7 +29,6 @@ final class ImagesListViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
         
-        // Подписка на обновления
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(updateTableViewAnimated),
@@ -96,7 +94,7 @@ extension ImagesListViewController: UITableViewDataSource {
                 print(failure.localizedDescription)
             }
         }
-
+        
     }
 }
 
@@ -114,15 +112,15 @@ extension ImagesListViewController: UITableViewDelegate {
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
-            let photo = photos[indexPath.row]
-            
-            let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
-            let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
-            let imageWidth = photo.size.width
-            let scale = imageViewWidth / imageWidth
-            let cellHeight = photo.size.height * scale + imageInsets.top + imageInsets.bottom
-            return cellHeight
-        }
+        let photo = photos[indexPath.row]
+        
+        let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
+        let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
+        let imageWidth = photo.size.width
+        let scale = imageViewWidth / imageWidth
+        let cellHeight = photo.size.height * scale + imageInsets.top + imageInsets.bottom
+        return cellHeight
+    }
 }
 
 // MARK: - Helpers
@@ -130,90 +128,9 @@ extension ImagesListViewController {
     @objc private func updateTableViewAnimated() {
         print(#function)
         
-        let oldCount = photos.count
-        let newCount = imagesListService.photos.count
+        _ = photos.count
+        _ = imagesListService.photos.count
         photos = imagesListService.photos
         tableView.reloadData()
-//        if oldCount != newCount {
-//            tableView.performBatchUpdates {
-//                let indexPaths = (oldCount..<newCount).map { IndexPath(row: $0, section: 0) }
-//                tableView.insertRows(at: indexPaths, with: .automatic)
-//            } completion: { _ in
-////                print("🔵 [ImagesListViewController] Таблица обновлена, добавлено \(newCount - oldCount) строк")
-//            }
-//        }
-    }
-}
-
-
-
-//// //// / 032------------
-extension ImagesListViewController: ImagesListView {
-    func reload() {
-        updateTableViewAnimated()
-    }
-    
-    func showError(_ message: String) {
-        
-    }
-}
-
-protocol ImagesListView: AnyObject {
-    func reload()
-    func showError(_ message: String)
-}
-
-protocol ImagesListPresenter {
-    func viewDidLoad()
-    func changeLike(photoId: String, isLike: Bool)
-    func imageTapped(photoId: String)
-}
-
-class ImagesListPresenterImpl: ImagesListPresenter {
-    weak var view: ImagesListView?
-    let imageService: ImageService
-    var page: Int = 0
-    
-    init(
-        view: ImagesListView,
-        imageService: ImageService
-    ) {
-        self.view = view
-        self.imageService = imageService
-    }
-    
-    func viewDidLoad() {
-        loadImages()
-    }
-    
-    func changeLike(photoId: String, isLike: Bool) {
-        
-    }
-    
-    func imageTapped(photoId: String) {
-        
-    }
-    
-    private func loadImages() {
-        imageService.loadImages { [weak self] result in
-            switch result {
-            case .success(let success):
-                self?.view?.reload()
-                self?.page += 10
-                
-            case .failure(let failure):
-                self?.view?.showError(failure.localizedDescription)
-            }
-        }
-    }
-}
-
-protocol ImageService {
-    func loadImages(completion: (Result<Void, Error>) -> Void)
-}
-
-class ImageServiceImpl: ImageService {
-    func loadImages(completion: (Result<Void, any Error>) -> Void) {
-        completion(.success(()))
     }
 }

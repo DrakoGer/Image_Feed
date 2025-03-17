@@ -7,11 +7,6 @@
 
 import Foundation
 
-enum NetworkError: Error {
-    case badURL
-    case decodeError
-}
-
 final class ImagesListService {
     static let shared = ImagesListService()
     static let didChangeNotification = Notification.Name("ImagesListServiceDidChange")
@@ -72,8 +67,8 @@ final class ImagesListService {
             guard let data = data,
                   let response = response as? HTTPURLResponse,
                   (200...299).contains(response.statusCode) else {
-                let statusCode = (response as? HTTPURLResponse)?.statusCode ?? 0
-                let dataString = String(data: data ?? Data(), encoding: .utf8) ?? "nil"
+                _ = (response as? HTTPURLResponse)?.statusCode ?? 0
+                _ = String(data: data ?? Data(), encoding: .utf8) ?? "nil"
                 return
             }
                         
@@ -161,6 +156,12 @@ struct Photo {
     let fullImageURL: String
     var isLiked: Bool
     
+    // Статический экземпляр ISO8601DateFormatter
+    private static let isoFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        return formatter
+    }()
+    
     mutating func toggleLike() {
         isLiked.toggle()
     }
@@ -171,7 +172,7 @@ extension Photo {
         id = photoResult.id
         size = CGSize(width: Double(photoResult.width), height: Double(photoResult.height))
         createdAt = if let createdAt = photoResult.createdAt {
-            ISO8601DateFormatter().date(from: createdAt)
+            Self.isoFormatter.date(from: createdAt)
         } else {
             nil
         }

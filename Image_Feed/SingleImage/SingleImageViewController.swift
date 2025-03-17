@@ -6,9 +6,7 @@
 //
 
 import UIKit
-import Foundation
 import Kingfisher
-import ProgressHUD
 
 final class SingleImageViewController: UIViewController {
     
@@ -21,7 +19,7 @@ final class SingleImageViewController: UIViewController {
             centerImageInScrollView()
         }
     }
-    
+    @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var imageView: UIImageView!
     
     var imageUrl: String?
@@ -150,8 +148,6 @@ final class SingleImageViewController: UIViewController {
         })
         present(alert, animated: true)
     }
-    
-    @IBOutlet weak var scrollView: UIScrollView!
 }
 
 extension SingleImageViewController: UIScrollViewDelegate {

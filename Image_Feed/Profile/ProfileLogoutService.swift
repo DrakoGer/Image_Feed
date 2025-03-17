@@ -11,7 +11,7 @@ final class ProfileLogoutService {
 
    func logout() {
        cleanCookies()
-       KeychainWrapper.standard.removeObject(forKey: "AuthToken")
+       OAuth2TokenStorage().token = nil
        ProfileService.shared.clearProfile()
        ProfileImageService.shared.clearAvatar()
        ImagesListService.shared.clearPhotos()

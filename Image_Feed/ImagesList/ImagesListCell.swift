@@ -16,15 +16,22 @@ final class ImagesListCell: UITableViewCell {
     @IBOutlet weak var dateLabel: UILabel!
     @IBOutlet weak var likeButton: UIButton!
     
-    //private var currentImageURL: String?
+    private static let dateFormatter: DateFormatter = {
+            let formatter = DateFormatter()
+            formatter.dateStyle = .long
+            formatter.timeStyle = .none
+            return formatter
+        }()
     
     var onLikeTapped: (() -> Void)?
+    
     
     // MARK: - Lifecycle
     override func prepareForReuse() {
         super.prepareForReuse()
         cellImage.kf.cancelDownloadTask()
     }
+    
     
     // MARK: - Configuration
     func configure(with photo: Photo) {
@@ -41,9 +48,7 @@ final class ImagesListCell: UITableViewCell {
         likeButton.setImage(likeImage, for: .normal)
     }
     
-    @IBAction func likeButtonDidTapped(_ sender: Any) {
+    @IBAction private func likeButtonDidTapped(_ sender: Any) {
         onLikeTapped?()
     }
-    
-
 }
