@@ -128,9 +128,15 @@ extension ImagesListViewController {
     @objc private func updateTableViewAnimated() {
         print(#function)
         
-        _ = photos.count
-        _ = imagesListService.photos.count
+        let oldCount = photos.count
         photos = imagesListService.photos
-        tableView.reloadData()
+        let newCount = photos.count
+        
+        if newCount > oldCount {
+            let indexPaths = (oldCount..<newCount).map { IndexPath(row: $0, section: 0) }
+            tableView.insertRows(at: indexPaths, with: .automatic)
+        } else {
+            tableView.reloadData()
+        }
     }
 }

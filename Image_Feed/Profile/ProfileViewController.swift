@@ -171,15 +171,15 @@ final class ProfileViewController: UIViewController {
     private func showLogoutAler() {
         let alert = UIAlertController(title: "Пока, пока!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
         
-        let yesAction = UIAlertAction(title: "Да", style: .default) { _ in
+        let noAction = UIAlertAction(title: "Нет", style: .default)
+        
+        let yesAction = UIAlertAction(title: "Да", style: .cancel) { _ in
             ProfileLogoutService.shared.logout()
             UIApplication.shared.windows.first?.rootViewController = SplashViewController()
         }
         
-        let noAction = UIAlertAction(title: "Нет", style: .cancel)
-        
-        alert.addAction(yesAction)
         alert.addAction(noAction)
+        alert.addAction(yesAction)
         
         present(alert, animated: true)
     }

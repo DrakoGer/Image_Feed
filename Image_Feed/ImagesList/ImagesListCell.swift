@@ -17,32 +17,35 @@ final class ImagesListCell: UITableViewCell {
     @IBOutlet weak var likeButton: UIButton!
     
     private static let dateFormatter: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .long
-            formatter.timeStyle = .none
-            return formatter
-        }()
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
+        return formatter
+    }()
     
     var onLikeTapped: (() -> Void)?
     
-    
-    // MARK: - Lifecycle
     override func prepareForReuse() {
         super.prepareForReuse()
         cellImage.kf.cancelDownloadTask()
+        cellImage.image = nil
+        dateLabel.text = nil
     }
     
-    
-    // MARK: - Configuration
     func configure(with photo: Photo) {
         let placeHolder = UIImage(named: "placeHolderForImageCell")
         cellImage.kf.indicatorType = .activity
-        cellImage.kf.setImage(with: URL(string: photo.thumbImageURL), placeholder: placeHolder)
+        if let url = URL(string: photo.thumbImageURL) {
+            cellImage.kf.setImage(with: url, placeholder: placeHolder)
+        } else {
+            cellImage.image = placeHolder
+        }
         
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        formatter.timeStyle = .none
-        dateLabel.text = formatter.string(from: photo.createdAt ?? Date())
+        if let createdAt = photo.createdAt {
+            dateLabel.text = Self.dateFormatter.string(from: createdAt)
+        } else {
+            dateLabel.text = "Неизвестно"
+        }
         
         let likeImage = photo.isLiked ? UIImage(named: "likeActive") : UIImage(named: "likeNotActive")
         likeButton.setImage(likeImage, for: .normal)

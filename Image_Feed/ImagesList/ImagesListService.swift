@@ -75,9 +75,8 @@ final class ImagesListService {
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
-                
                 let photoResults = try decoder.decode([PhotoResult].self, from: data)
-                let photos = photoResults.map(Photo.init)
+                let photos = photoResults.map { Photo(photoResult: $0) } // Без try, так как деградация
                 
                 DispatchQueue.main.async {
                     self.photos.append(contentsOf: photos)
@@ -85,7 +84,7 @@ final class ImagesListService {
                     NotificationCenter.default.post(name: Self.didChangeNotification, object: nil)
                 }
             } catch {
-                print("🔴 \(error.localizedDescription)")
+                print("🔴 [ImagesListService] Ошибка декодирования: \(error.localizedDescription)")
             }
         }
         self.task = task
@@ -111,7 +110,6 @@ final class ImagesListService {
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
-                
             }
             
             guard let response = response as? HTTPURLResponse,
@@ -156,7 +154,6 @@ struct Photo {
     let fullImageURL: String
     var isLiked: Bool
     
-    // Статический экземпляр ISO8601DateFormatter
     private static let isoFormatter: ISO8601DateFormatter = {
         let formatter = ISO8601DateFormatter()
         return formatter
@@ -171,11 +168,7 @@ extension Photo {
     init(photoResult: PhotoResult) {
         id = photoResult.id
         size = CGSize(width: Double(photoResult.width), height: Double(photoResult.height))
-        createdAt = if let createdAt = photoResult.createdAt {
-            Self.isoFormatter.date(from: createdAt)
-        } else {
-            nil
-        }
+        createdAt = photoResult.createdAt.flatMap { Self.isoFormatter.date(from: $0) } // Изящная деградация
         welcomeDescription = photoResult.description
         thumbImageURL = photoResult.urls.thumb
         largeImageURL = photoResult.urls.full
