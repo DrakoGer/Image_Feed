@@ -54,7 +54,7 @@ final class ProfileViewController: UIViewController {
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = #colorLiteral(red: 0.1019607843, green: 0.1058823529, blue: 0.1333333333, alpha: 1)
+        view.backgroundColor = UIColor(named: "YP Black")
         setupUI()
         updateProfileInfo()
         setupObservers()
@@ -104,18 +104,45 @@ final class ProfileViewController: UIViewController {
             print("🔄 [ProfileViewController.updateAvatar] Аватарка обновлена из сервиса")
         } else {
             print("⚠️ [ProfileViewController.updateAvatar] Аватарка не найдена в сервисе")
+            
+            guard let avatarURLString = ProfileImageService.shared.avatarURL, !avatarURLString.isEmpty else {
+                print("❌ [ProfileViewController.updateAvatar] Ошибка: avatarURL отсутствует или пустое значение")
+                avatarImageView.image = UIImage(named: "UserPhoto")
+                return
+            }
+            
+            guard let url = URL(string: avatarURLString) else {
+                print("❌ [ProfileViewController.updateAvatar] Ошибка: Некорректный URL: \(avatarURLString)")
+                avatarImageView.image = UIImage(named: "UserPhoto")
+                return
+            }
+            
+            let processor = RoundCornerImageProcessor(cornerRadius: 50, backgroundColor: .ypBlack)
+            
+            avatarImageView.kf.setImage(
+                with: url,
+                placeholder: UIImage(named: "UserPhoto"),
+                options: [
+                    .processor(processor),
+                    .transition(.fade(0.3))
+                ]) { result in
+                    switch result {
+                    case .success(let value):
+                        print("✅ [ProfileViewController.updateAvatar] Аватарка успешно загружена: \(value.source.url?.absoluteString ?? "неизвестно")")
+                    case .failure(let error):
+                        print("❌ [ProfileViewController.updateAvatar] Ошибка загрузки: \(error.localizedDescription)")
+                        self.avatarImageView.image = UIImage(named: "UserPhoto")
+                    }
+                }
         }
     }
     
     // MARK: - Загрузка аватарки
     private func loadAvatar() {
-        print("🟢 [ProfileViewController.loadAvatar] Начало загрузки аватарки")
-        guard let profile = ProfileService.shared.profile else {
-            print("❌ [ProfileViewController.loadAvatar] Ошибка: профиль отсутствует")
-            return
-        }
+        guard let profile = ProfileService.shared.profile else { return }
         let username = profile.username
         print("✅ [ProfileViewController.loadAvatar] Username: \(username)")
+        
         profileImageService.fetchProfileImageURL(username: username) { [weak self] result in
             guard let self = self else { return }
             switch result {
@@ -131,13 +158,29 @@ final class ProfileViewController: UIViewController {
     // MARK: - Обновление данных профиля
     private func updateProfileInfo() {
         guard let profile = ProfileService.shared.profile else { return }
-        print("🔍 [ProfileViewController.updateProfileInfo] Профиль: username=\(profile.username ?? "nil"), name=\(profile.name), loginName=\(profile.loginName)")
+        print("🔍 [ProfileViewController.updateProfileInfo] Профиль: username=\(profile.username), name=\(profile.name), loginName=\(profile.loginName)")
         nameLabel.text = profile.name
         emailLabel.text = profile.loginName
         descriptionLabel.text = profile.bio
     }
     
     @objc private func logoutButtonTapped() {
-        // TODO: - Добавить логику при нажатии на кнопку
+        showLogoutAler()
+    }
+    
+    private func showLogoutAler() {
+        let alert = UIAlertController(title: "Пока, пока!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
+        
+        let noAction = UIAlertAction(title: "Нет", style: .default)
+        
+        let yesAction = UIAlertAction(title: "Да", style: .cancel) { _ in
+            ProfileLogoutService.shared.logout()
+            UIApplication.shared.windows.first?.rootViewController = SplashViewController()
+        }
+        
+        alert.addAction(noAction)
+        alert.addAction(yesAction)
+        
+        present(alert, animated: true)
     }
 }

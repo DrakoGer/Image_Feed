@@ -52,19 +52,22 @@ struct NetworkClient: NetworkRouting {
                 return
             }
             
+            
             if let response = response as? HTTPURLResponse,
-               response.statusCode < 200 || response.statusCode >= 300 {
+               !(200..<300).contains(response.statusCode) {
                 print("❌ [NetworkClient] Ошибка HTTP: \(response.statusCode)")
-                let userInfo = data != nil ? [ "data": data! ] : nil
+                let userInfo = data != nil ? ["data": data!] : nil
                 completion(.failure(NSError(domain: "", code: response.statusCode, userInfo: userInfo)))
                 return
             }
+            
             
             guard let data = data else {
                 print("❌ [NetworkClient] Ошибка: Данные отсутствуют")
                 completion(.failure(NSError(domain: "", code: -1, userInfo: nil)))
                 return
             }
+           
             
             do {
                 let decoder = JSONDecoder()
@@ -81,3 +84,5 @@ struct NetworkClient: NetworkRouting {
         return task
     }
 }
+
+

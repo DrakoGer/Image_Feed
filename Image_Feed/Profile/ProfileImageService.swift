@@ -27,6 +27,12 @@ final class ProfileImageService {
     
     private init() {}
     
+    func clearAvatar() {
+        avatarURL = nil
+        NotificationCenter.default.post(name: ProfileImageService.didChangeNotification, object: self)
+        print("Аватарка удалена")
+    }
+    
     func fetchProfileImageURL(username: String, completion: @escaping (Result<UIImage, Error>) -> Void) {
         assert(Thread.isMainThread)
         print("🟢 [ProfileImageService.fetchProfileImageURL] вызван с username: \(username)")
