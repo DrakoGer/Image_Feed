@@ -44,7 +44,7 @@ final class ImagesListCell: UITableViewCell {
         if let createdAt = photo.createdAt {
             dateLabel.text = Self.dateFormatter.string(from: createdAt)
         } else {
-            dateLabel.text = "Неизвестно"
+            dateLabel.text = ""
         }
         
         let likeImage = photo.isLiked ? UIImage(named: "likeActive") : UIImage(named: "likeNotActive")

@@ -168,7 +168,7 @@ extension Photo {
     init(photoResult: PhotoResult) {
         id = photoResult.id
         size = CGSize(width: Double(photoResult.width), height: Double(photoResult.height))
-        createdAt = photoResult.createdAt.flatMap { Self.isoFormatter.date(from: $0) } // Изящная деградация
+        createdAt = photoResult.createdAt.flatMap { Self.isoFormatter.date(from: $0) }
         welcomeDescription = photoResult.description
         thumbImageURL = photoResult.urls.thumb
         largeImageURL = photoResult.urls.full
