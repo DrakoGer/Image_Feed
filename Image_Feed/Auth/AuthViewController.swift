@@ -14,7 +14,11 @@ final class AuthViewController: UIViewController {
     private let showWebViewSegueIdentifier = "showWebView"
     private let oauth2Service = OAuth2Service.shared
     
-    @IBOutlet weak var entryButton: UIButton!
+    @IBOutlet weak var entryButton: UIButton! {
+        didSet {
+                    entryButton.accessibilityIdentifier = "LoginButton" // Убедитесь, что это есть
+                }
+    }
     
     // MARK: - Lifecycle
     override func viewDidLoad() {

@@ -13,6 +13,11 @@ final class WebViewViewController: UIViewController, WebViewViewControllerProtoc
     var presenter: WebViewPresenterProtocol?
     
     @IBOutlet var webView: WKWebView!
+    {
+        didSet {
+            webView.accessibilityIdentifier = "UnsplashWebView" // Добавляем здесь
+        }
+}
     @IBOutlet var progressView: UIProgressView!
     @IBOutlet weak var backButton: UIButton!
     

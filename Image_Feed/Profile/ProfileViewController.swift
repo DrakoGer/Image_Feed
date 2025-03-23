@@ -1,7 +1,7 @@
 import UIKit
 import Kingfisher
 
-final class ProfileViewController: UIViewController {
+final class ProfileViewController: UIViewController, ProfileViewControllerProtocol {
     
     private let avatarImageView: UIImageView = {
         let imageView = UIImageView()
@@ -19,6 +19,7 @@ final class ProfileViewController: UIViewController {
         label.textColor = UIColor(named: "YP White")
         label.font = .boldSystemFont(ofSize: 23)
         label.translatesAutoresizingMaskIntoConstraints = false
+        label.accessibilityIdentifier = "nameLabel"
         return label
     }()
     
@@ -28,6 +29,7 @@ final class ProfileViewController: UIViewController {
         label.textColor = UIColor(named: "YP Grey")
         label.font = .systemFont(ofSize: 13)
         label.translatesAutoresizingMaskIntoConstraints = false
+        label.accessibilityIdentifier = "emailLabel"
         return label
     }()
     
@@ -37,6 +39,7 @@ final class ProfileViewController: UIViewController {
         label.textColor = UIColor(named: "YP White")
         label.font = .systemFont(ofSize: 13)
         label.translatesAutoresizingMaskIntoConstraints = false
+        label.accessibilityIdentifier = "descriptionLabel"
         return label
     }()
     
@@ -49,16 +52,24 @@ final class ProfileViewController: UIViewController {
     }()
     
     // MARK: - Подписка на изменения аватарки
-    private var profileImageObserver: NSObjectProtocol?
-    private let profileImageService = ProfileImageService.shared
+    var presenter: ProfilePresenterProtocol?
+    
+    init(presenter: ProfilePresenterProtocol? = ProfilePresenter()) {
+            self.presenter = presenter
+            super.init(nibName: nil, bundle: nil)
+        }
+        
+        required init?(coder: NSCoder) {
+            super.init(coder: coder)
+            self.presenter = ProfilePresenter()
+        }
     
     override func viewDidLoad() {
         super.viewDidLoad()
-        view.backgroundColor = UIColor(named: "YP Black")
-        setupUI()
-        updateProfileInfo()
-        setupObservers()
-        loadAvatar()
+                view.backgroundColor = UIColor(named: "YP Black")
+                setupUI()
+                presenter?.view = self
+                presenter?.viewDidLoad()
     }
     
     private func setupUI() {
@@ -86,74 +97,37 @@ final class ProfileViewController: UIViewController {
         ])
     }
     
-    // MARK: - Подписка на обновление аватарки
-    private func setupObservers() {
-        profileImageObserver = NotificationCenter.default.addObserver(
-            forName: ProfileImageService.didChangeNotification,
-            object: nil,
-            queue: .main
-        ) { [weak self] _ in
-            self?.updateAvatar()
-        }
-    }
     
-    // MARK: - Обновление аватарки
-    private func updateAvatar() {
-        if let image = ProfileImageService.shared.avatarImage {
-            avatarImageView.image = image
-            print("🔄 [ProfileViewController.updateAvatar] Аватарка обновлена из сервиса")
-        } else {
-            print("⚠️ [ProfileViewController.updateAvatar] Аватарка не найдена в сервисе")
-            
-            guard let avatarURLString = ProfileImageService.shared.avatarURL, !avatarURLString.isEmpty else {
-                print("❌ [ProfileViewController.updateAvatar] Ошибка: avatarURL отсутствует или пустое значение")
+    func updateProfileDetails(name: String, login: String, description: String?) {
+            nameLabel.text = name
+            emailLabel.text = login
+            descriptionLabel.text = description
+        }
+    
+
+    func updateAvatar(url: URL?) {
+            guard let url = url else {
                 avatarImageView.image = UIImage(named: "UserPhoto")
                 return
             }
-            
-            guard let url = URL(string: avatarURLString) else {
-                print("❌ [ProfileViewController.updateAvatar] Ошибка: Некорректный URL: \(avatarURLString)")
-                avatarImageView.image = UIImage(named: "UserPhoto")
-                return
-            }
-            
             let processor = RoundCornerImageProcessor(cornerRadius: 50, backgroundColor: .ypBlack)
-            
             avatarImageView.kf.setImage(
                 with: url,
                 placeholder: UIImage(named: "UserPhoto"),
                 options: [
                     .processor(processor),
                     .transition(.fade(0.3))
-                ]) { result in
-                    switch result {
-                    case .success(let value):
-                        print("✅ [ProfileViewController.updateAvatar] Аватарка успешно загружена: \(value.source.url?.absoluteString ?? "неизвестно")")
-                    case .failure(let error):
-                        print("❌ [ProfileViewController.updateAvatar] Ошибка загрузки: \(error.localizedDescription)")
-                        self.avatarImageView.image = UIImage(named: "UserPhoto")
-                    }
+                ]
+            ) { result in
+                switch result {
+                case .success:
+                    print("✅ [ProfileViewController.updateAvatar] Аватарка успешно загружена")
+                case .failure(let error):
+                    print("❌ [ProfileViewController.updateAvatar] Ошибка загрузки: \(error.localizedDescription)")
+                    self.avatarImageView.image = UIImage(named: "UserPhoto")
                 }
-        }
-    }
-    
-    // MARK: - Загрузка аватарки
-    private func loadAvatar() {
-        guard let profile = ProfileService.shared.profile else { return }
-        let username = profile.username
-        print("✅ [ProfileViewController.loadAvatar] Username: \(username)")
-        
-        profileImageService.fetchProfileImageURL(username: username) { [weak self] result in
-            guard let self = self else { return }
-            switch result {
-            case .success(let image):
-                self.avatarImageView.image = image
-                print("✅ [ProfileViewController.loadAvatar] Аватарка установлена")
-            case .failure(let error):
-                print("❌ [ProfileViewController.loadAvatar] Ошибка: \(error.localizedDescription)")
             }
         }
-    }
     
     // MARK: - Обновление данных профиля
     private func updateProfileInfo() {
@@ -164,23 +138,20 @@ final class ProfileViewController: UIViewController {
         descriptionLabel.text = profile.bio
     }
     
-    @objc private func logoutButtonTapped() {
-        showLogoutAler()
-    }
-    
-    private func showLogoutAler() {
-        let alert = UIAlertController(title: "Пока, пока!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
-        
-        let noAction = UIAlertAction(title: "Нет", style: .default)
-        
-        let yesAction = UIAlertAction(title: "Да", style: .cancel) { _ in
-            ProfileLogoutService.shared.logout()
-            UIApplication.shared.windows.first?.rootViewController = SplashViewController()
+    @objc func logoutButtonTapped() {
+            presenter?.didTapLogoutButton()
         }
-        
+    
+    func showLogoutAlert(completion: @escaping () -> Void) {
+        let alert = UIAlertController(title: "Пока, пока!", message: "Уверены, что хотите выйти?", preferredStyle: .alert)
+        let noAction = UIAlertAction(title: "Нет", style: .default)
+        let yesAction = UIAlertAction(title: "Да", style: .cancel) { [weak self] _ in
+            self?.dismiss(animated: true) {
+                completion()
+            }
+        }
         alert.addAction(noAction)
         alert.addAction(yesAction)
-        
         present(alert, animated: true)
-    }
+        }
 }

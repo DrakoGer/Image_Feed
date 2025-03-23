@@ -103,7 +103,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="dkx-z0-nzr" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1341" y="207"/>
+            <point key="canvasLocation" x="-1342.0289855072465" y="206.91964285714286"/>
         </scene>
         <!--AuthViewController-->
         <scene sceneID="DdW-0m-Ywd">
@@ -276,7 +276,7 @@
                                     <outlet property="delegate" destination="mew-oX-ouA" id="EgA-KI-pp4"/>
                                 </connections>
                             </scrollView>
-                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xlE-bm-ApI">
+                            <button opaque="NO" contentMode="scaleToFill" restorationIdentifier="chevron.backward" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xlE-bm-ApI">
                                 <rect key="frame" x="8" y="8" width="48" height="48"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="48" id="Fyk-Dz-RPo"/>
@@ -317,6 +317,7 @@
                         </constraints>
                     </view>
                     <connections>
+                        <outlet property="backButton" destination="xlE-bm-ApI" id="Tg3-9t-KPH"/>
                         <outlet property="imageView" destination="Kgg-er-Pak" id="BOC-A2-8xg"/>
                         <outlet property="scrollView" destination="SsQ-rn-jRI" id="r7a-UM-s74"/>
                     </connections>
