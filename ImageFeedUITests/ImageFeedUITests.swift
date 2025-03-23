@@ -49,7 +49,7 @@ final class ImageFeedUITests: XCTestCase {
         let loginTextField = webView.descendants(matching: .textField).element
         XCTAssertTrue(waitForElement(loginTextField), "Поле для ввода логина не найдено")
         loginTextField.tap()
-        loginTextField.typeText("gije.ger@gmail.com")
+        loginTextField.typeText("Мейл")
         webView.tap() // Тапаем по webView, чтобы убрать клавиатуру
         sleep(1)
         
@@ -64,7 +64,7 @@ final class ImageFeedUITests: XCTestCase {
         passwordTextField.tap()
         sleep(1)
 
-        UIPasteboard.general.string = "PoNchik123"
+        UIPasteboard.general.string = "пароль"
 
         passwordTextField.press(forDuration: 1.5)
         XCTAssertTrue(app.menuItems["Paste"].waitForExistence(timeout: 5))
