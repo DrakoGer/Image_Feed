@@ -14,7 +14,11 @@ final class AuthViewController: UIViewController {
     private let showWebViewSegueIdentifier = "showWebView"
     private let oauth2Service = OAuth2Service.shared
     
-    @IBOutlet weak var entryButton: UIButton!
+    @IBOutlet weak var entryButton: UIButton! {
+        didSet {
+                    entryButton.accessibilityIdentifier = "LoginButton" // Убедитесь, что это есть
+                }
+    }
     
     // MARK: - Lifecycle
     override func viewDidLoad() {
@@ -30,20 +34,16 @@ final class AuthViewController: UIViewController {
     // MARK: - Navigation
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
         if segue.identifier == showWebViewSegueIdentifier {
-            print("Переход на WebViewViewController")
-            
             guard let webViewViewController = segue.destination as? WebViewViewController else {
                 assertionFailure("Ошибка: не удалось привести segue.destination к WebViewViewController")
                 return
             }
-            
+            let authHelper = AuthHelper()
+            let webWiewPresenter = WebViewPresenterImpl(authHelper: authHelper)
+            webViewViewController.presenter = webWiewPresenter
+            webWiewPresenter.view = webViewViewController
             webViewViewController.delegate = self
             
-            if webViewViewController.delegate == nil {
-                print("Delegate не установлен в prepare(for:sender:)!")
-            } else {
-                print("Delegate успешно установлен в prepare(for:sender:)")
-            }
         } else {
             super.prepare(for: segue, sender: sender)
         }

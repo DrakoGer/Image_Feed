@@ -13,13 +13,21 @@ struct ProfileResult: Decodable {
     let firstName: String?
     let lastName: String?
     let bio: String?
+    let profileImage: ProfileImage? // Изменяем на объект
     
     enum CodingKeys: String, CodingKey {
         case username
         case firstName = "first_name"
         case lastName = "last_name"
         case bio
+        case profileImage = "profile_image"
     }
+}
+
+struct ProfileImage: Decodable {
+    let small: String?
+    let medium: String?
+    let large: String?
 }
 
 // MARK: - Модель профиля для UI
@@ -28,23 +36,25 @@ struct Profile {
     let name: String
     let loginName: String
     let bio: String?
+    let avatarURL: String?
 }
 
 // MARK: - Сервис профиля
 extension Profile {
     init(result profile: ProfileResult) {
-        self.init(username: profile.username,
-                  name: "\(profile.firstName ?? "") \(profile.lastName ?? "")".trimmingCharacters(in: .whitespaces),
-                  loginName: "@\(profile.username)",
-                  bio: profile.bio)
+        self.init(
+            username: profile.username,
+            name: "\(profile.firstName ?? "") \(profile.lastName ?? "")".trimmingCharacters(in: .whitespaces),
+            loginName: "@\(profile.username)",
+            bio: profile.bio,
+            avatarURL: profile.profileImage?.medium // Используем medium размер
+        )
     }
 }
 
 final class ProfileService {
-    
     static let shared = ProfileService()
     private let networkClient = NetworkClient()
-    
     let storage = OAuth2TokenStorage()
     private var task: URLSessionTask?
     private let jsonDecoder = JSONDecoder()
@@ -60,20 +70,16 @@ final class ProfileService {
         NotificationCenter.default.post(name: ProfileService.didChangeNotification, object: nil)
     }
     
-    // MARK: - Создание запроса
     private func makeProfileURLRequest(token: String) -> URLRequest? {
-        print("🟢 [ProfileService] makeProfileURLRequest() вызван")
         let baseURL = Constants.defaultBaseURL
         
         guard let url = URL(string: "/me", relativeTo: baseURL) else {
-            print("❌ Ошибка: Невозможно создать URL запроса профиля")
             return nil
         }
         
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
         return request
     }
     
@@ -83,15 +89,11 @@ final class ProfileService {
         print("Профиль удален")
     }
     
-    // MARK: - Получение профиля
     func fetchProfile(completion: @escaping (Result<Profile, Error>) -> Void) {
-        print("🟢 [ProfileService.fetchProfile] вызван")
         guard let token = storage.token else {
-            print("❌ [ProfileService.fetchProfile] Ошибка: Токен отсутствует в хранилище!")
             completion(.failure(NSError(domain: "ProfileService", code: 401, userInfo: nil)))
             return
         }
-        print("✅ [ProfileService.fetchProfile] Найден токен: \(token)")
         
         assert(Thread.isMainThread)
         
@@ -104,9 +106,8 @@ final class ProfileService {
         request.httpMethod = "GET"
         request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        print("🔍 [ProfileService.fetchProfile] Формируем запрос: URL=\(url.absoluteString), Authorization=\(request.value(forHTTPHeaderField: "Authorization") ?? "не задано")")
         
-        networkClient.objectTask(for: request) { (result: Result<ProfileResult, Error>) in
+        task = networkClient.objectTask(for: request) { (result: Result<ProfileResult, Error>) in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let profileResult):
@@ -114,14 +115,13 @@ final class ProfileService {
                     self.profile = profile
                     completion(.success(profile))
                 case .failure(let error):
-                    print("❌ [ProfileService.fetchProfile] Ошибка получения профиля: \(error.localizedDescription) (код: \(error._code))")
                     if let nsError = error as NSError?, let data = nsError.userInfo["data"] as? Data,
                        let responseString = String(data: data, encoding: .utf8) {
-                        print("🔍 [ProfileService.fetchProfile] Тело ответа: \(responseString)")
                     }
                     completion(.failure(error))
                 }
             }
         }
+        task?.resume()
     }
 }

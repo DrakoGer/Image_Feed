@@ -22,6 +22,13 @@ final class SingleImageViewController: UIViewController {
     @IBOutlet weak var scrollView: UIScrollView!
     @IBOutlet weak var imageView: UIImageView!
     
+    @IBOutlet weak var backButton: UIButton! {
+        didSet {
+            backButton.setImage(UIImage(systemName: "chevron.backward"), for: .normal)
+            backButton.accessibilityIdentifier = "BackButton"
+        }
+    }
+    
     var imageUrl: String?
     private let placeholderImageView: UIImageView = {
         let imageView = UIImageView(image: UIImage(named: "placeHolderStubForSingleImage"))
@@ -109,7 +116,6 @@ final class SingleImageViewController: UIViewController {
     
     private func loadImage() {
         guard let url = imageURL else {
-            print("[SingleImageViewController|loadImage]: Некорректный URL изображения")
             return
         }
         
@@ -127,14 +133,15 @@ final class SingleImageViewController: UIViewController {
                 
                 switch result {
                 case .success(let imageResult):
+                    self.image = imageResult.image
                     self.imageView.image = imageResult.image
-                    self.removePlaceholder() // Удаляем заглушку после успешной загрузки
+                    self.removePlaceholder()
                     self.rescaleAndCenterImageInScrollView(image: imageResult.image)
                     print("Изображение загружено: \(imageResult.image.size)")
                 case .failure(let error):
                     print("[SingleImageViewController|loadImage]: Ошибка загрузки: \(error.localizedDescription)")
                     self.imageView.image = nil
-                    self.setupPlaceholderConstraints() // Показываем заглушку в случае ошибки
+                    self.setupPlaceholderConstraints()
                     self.showSingleImageLoadError()
                 }
             }

@@ -8,18 +8,18 @@
 import UIKit
 import Kingfisher
 
-final class ImagesListViewController: UIViewController {
+final class ImagesListViewController: UIViewController, ImagesListViewControllerProtocol {
     
     private let showSingleImageSegueIdentifier = "ShowSingleImage"
     
     // MARK: - Outlets
     @IBOutlet private weak var tableView: UITableView!
     
-    // MARK: - Properties
-    private var photos: [Photo] = [] // Локальный массив фотографий
-    private let imagesListService = ImagesListService.shared
     
-    // MARK: - Lifecycle
+    // MARK: - Properties
+    private var photos: [Photo] = []
+    var presenter: ImagesListPresenterProtocol?
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         tableView.rowHeight = UITableView.automaticDimension
@@ -29,14 +29,9 @@ final class ImagesListViewController: UIViewController {
         tableView.dataSource = self
         tableView.delegate = self
         
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(updateTableViewAnimated),
-            name: ImagesListService.didChangeNotification,
-            object: nil
-        )
-        
-        imagesListService.fetchPhotosNextPage()
+        presenter = ImagesListPresenter()
+        presenter?.view = self
+        presenter?.viewDidLoad()
     }
     
     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
@@ -46,19 +41,46 @@ final class ImagesListViewController: UIViewController {
                 assertionFailure("Invalid segue destination")
                 return
             }
-            let photo = photos[indexPath.row]
-            viewController.imageURL = URL(string: photo.largeImageURL)
+            let photo = presenter?.getPhoto(at: indexPath.row) // Используем presenter
+            viewController.imageURL = URL(string: photo?.largeImageURL ?? "")
         } else {
             super.prepare(for: segue, sender: sender)
         }
     }
     
-    deinit {
-        NotificationCenter.default.removeObserver(self)
+    func updateTableView(with newPhotos: [Photo]) {
+        let oldCount = photos.count
+        photos.append(contentsOf: newPhotos)
+        let newCount = photos.count
+        updateTableViewAnimated(oldCount: oldCount, newCount: newCount)
+    }
+    
+    func reloadRows(at indexPaths: [IndexPath]) {
+        // Обновляем photos перед перерисовкой
+        for indexPath in indexPaths {
+            if let photo = presenter?.getPhoto(at: indexPath.row) {
+                photos[indexPath.row] = photo
+            }
+        }
+        tableView.reloadRows(at: indexPaths, with: .automatic)
+    }
+    
+    func showError(_ message: String) {
+        let alert = UIAlertController(title: "Ошибка", message: message, preferredStyle: .alert)
+        alert.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
+        present(alert, animated: true, completion: nil)
+    }
+    
+    func updateTableViewAnimated(oldCount: Int, newCount: Int) {
+        if newCount > oldCount {
+            let indexPaths = (oldCount..<newCount).map { IndexPath(row: $0, section: 0) }
+            tableView.insertRows(at: indexPaths, with: .automatic)
+        } else {
+            tableView.reloadData()
+        }
     }
 }
 
-// MARK: - UITableViewDataSource
 extension ImagesListViewController: UITableViewDataSource {
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return photos.count
@@ -72,71 +94,32 @@ extension ImagesListViewController: UITableViewDataSource {
         let photo = photos[indexPath.row]
         cell.configure(with: photo)
         cell.onLikeTapped = { [weak self] in
-            self?.likeIsTapped(for: photo, indexPath: indexPath)
+            self?.presenter?.didTapLikeButton(at: indexPath.row)
         }
-        
         return cell
-    }
-    
-    private func likeIsTapped(for photo: Photo, indexPath: IndexPath) {
-        UIBlockingProgressHUD.show()
-        
-        let photoId = photo.id
-        let isLiked = photo.isLiked
-        
-        imagesListService.changeLike(photoId: photoId, isLike: isLiked) { [weak self] result in
-            UIBlockingProgressHUD.dismiss()
-            switch result {
-            case .success:
-                self?.photos[indexPath.row].toggleLike()
-                self?.tableView.reloadRows(at: [indexPath], with: .automatic)
-            case .failure(let failure):
-                print(failure.localizedDescription)
-            }
-        }
-        
     }
 }
 
-// MARK: - UITableViewDelegate
 extension ImagesListViewController: UITableViewDelegate {
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         tableView.deselectRow(at: indexPath, animated: true)
+        presenter?.didSelectPhoto(at: indexPath.row)
         performSegue(withIdentifier: showSingleImageSegueIdentifier, sender: indexPath)
     }
     
     func tableView(_ tableView: UITableView, willDisplay cell: UITableViewCell, forRowAt indexPath: IndexPath) {
         if indexPath.row + 1 == photos.count {
-            imagesListService.fetchPhotosNextPage()
+            presenter?.fetchPhotos()
         }
     }
     
     func tableView(_ tableView: UITableView, heightForRowAt indexPath: IndexPath) -> CGFloat {
         let photo = photos[indexPath.row]
-        
         let imageInsets = UIEdgeInsets(top: 4, left: 16, bottom: 4, right: 16)
         let imageViewWidth = tableView.bounds.width - imageInsets.left - imageInsets.right
         let imageWidth = photo.size.width
         let scale = imageViewWidth / imageWidth
         let cellHeight = photo.size.height * scale + imageInsets.top + imageInsets.bottom
         return cellHeight
-    }
-}
-
-// MARK: - Helpers
-extension ImagesListViewController {
-    @objc private func updateTableViewAnimated() {
-        print(#function)
-        
-        let oldCount = photos.count
-        photos = imagesListService.photos
-        let newCount = photos.count
-        
-        if newCount > oldCount {
-            let indexPaths = (oldCount..<newCount).map { IndexPath(row: $0, section: 0) }
-            tableView.insertRows(at: indexPaths, with: .automatic)
-        } else {
-            tableView.reloadData()
-        }
     }
 }

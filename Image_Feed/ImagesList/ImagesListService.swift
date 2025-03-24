@@ -23,18 +23,15 @@ final class ImagesListService {
         photos.removeAll()
         lastLoadedPage = 0
         NotificationCenter.default.post(name: ImagesListService.didChangeNotification, object: self)
-        print("Фото и данные страниц удалены")
     }
     
     func fetchPhotosNextPage() {
         guard task == nil else {
-            print("🔴 [ImagesListService] Запрос уже выполняется")
             return
         }
         
         let nextPage = (lastLoadedPage ?? 0) + 1
         guard var urlComponents = URLComponents(string: "https://api.unsplash.com/photos") else {
-            print("🔴 [ImagesListService] Ошибка создания URL")
             return
         }
         
@@ -71,7 +68,7 @@ final class ImagesListService {
                 _ = String(data: data ?? Data(), encoding: .utf8) ?? "nil"
                 return
             }
-                        
+            
             do {
                 let decoder = JSONDecoder()
                 decoder.keyDecodingStrategy = .convertFromSnakeCase
@@ -93,6 +90,7 @@ final class ImagesListService {
     
     func changeLike(photoId: String, isLike: Bool, _ completion: @escaping (Result<Void, Error>) -> Void) {
         guard let url = URL(string: "https://api.unsplash.com/photos/\(photoId)/like") else {
+            completion(.failure(NSError(domain: "ImagesListService", code: 400, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])))
             return
         }
         
@@ -100,20 +98,25 @@ final class ImagesListService {
         request.httpMethod = isLike ? "POST" : "DELETE"
         if let token = OAuth2TokenStorage().token {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        } else {
+            completion(.failure(NSError(domain: "ImagesListService", code: 401, userInfo: [NSLocalizedDescriptionKey: "Token not found"])))
+            return
         }
-
+        
         let task = urlSession.dataTask(with: request) { [weak self] data, response, error in
             guard let self = self else { return }
             self.task = nil
-        
+            
             if let error = error {
                 DispatchQueue.main.async {
                     completion(.failure(error))
                 }
             }
             
-            guard let response = response as? HTTPURLResponse,
-                  (200...299).contains(response.statusCode) else {
+            guard let response = response as? HTTPURLResponse else {
+                DispatchQueue.main.async {
+                    completion(.failure(NSError(domain: "ImagesListService", code: 500, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])))
+                }
                 return
             }
             DispatchQueue.main.async {
@@ -144,7 +147,7 @@ struct URLs: Decodable {
     let thumb: String
 }
 
-struct Photo {
+struct Photo: Equatable {
     let id: String
     let size: CGSize
     let createdAt: Date?

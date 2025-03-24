@@ -14,7 +14,11 @@ final class ImagesListCell: UITableViewCell {
     
     @IBOutlet weak var cellImage: UIImageView!
     @IBOutlet weak var dateLabel: UILabel!
-    @IBOutlet weak var likeButton: UIButton!
+    @IBOutlet weak var likeButton: UIButton! {
+        didSet {
+            likeButton.accessibilityIdentifier = "like_button_on" // Убедитесь, что это есть
+                }
+    }
     
     private static let dateFormatter: DateFormatter = {
         let formatter = DateFormatter()
